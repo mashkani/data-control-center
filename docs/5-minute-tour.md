@@ -7,9 +7,11 @@ while evaluating the app for the first time.
 (`make install` && `make dev`, then open **`http://127.0.0.1:5173`**). Single-server
 alternative: `make serve` → **`http://127.0.0.1:8000`**.
 
+Fixture descriptions: [`examples/README.md`](../examples/README.md).
+
 ## 1. Upload safe example data
 
-Open the datasets area and upload:
+Open the datasets area and upload (files or **Choose folder**):
 
 - `examples/customers.csv`
 - `examples/events.jsonl`

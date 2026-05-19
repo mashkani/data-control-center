@@ -11,26 +11,20 @@ exploring, and querying local datasets.
 - Keep the product local-only. Do not introduce hosted, multi-user, shared-LAN,
   tenancy, or account-auth assumptions without an explicit user request.
 
-## Setup Commands
+## Setup and validation
 
-Run commands from the repository root unless noted.
+Run commands from the repository root unless noted. **Canonical commands and CI parity:**
+[`CONTRIBUTING.md`](CONTRIBUTING.md) (setup, Makefile targets, validation, coverage).
 
-- Install dependencies: `make install`
-- Start API and UI: `make dev`
-- Start only backend: `make backend`
-- Start only frontend: `make frontend`
-- Build frontend production bundle: `make build-ui`
-- Single-server mode (API serves built UI): `make serve`
-- Full validation (CI parity): `make check` (use `make check-ci` after lockfile changes)
-- Delete local app state and generated artifacts: `make clean-local`
+Quick reference:
 
-Use Node 22 from `.nvmrc` or Node 24+. Use Python 3.11+ with `uv`.
+- `make install` / `make dev` — dependencies and local dev servers
+- `make check` — full validation before finishing work
+- `make check-ci` — after **frontend** lockfile changes
+- `cd backend && uv sync --extra dev` — after **backend** `uv.lock` / pyproject changes, then `make check`
+- `make clean-local` — discard local workspace and uploads
 
-## Validation Commands
-
-Run **`make check`** from the repo root before finishing work that could affect either
-tier. See [`CONTRIBUTING.md`](CONTRIBUTING.md#validation) for individual steps, CI
-parity, coverage thresholds, and security audit commands.
+Use **Node 22** from [`.nvmrc`](.nvmrc) (matches CI). Use **Python 3.11+** with `uv`.
 
 If a required tool is missing or a network-dependent audit cannot run, state the exact
 blocker and any fallback checks performed.
@@ -69,6 +63,7 @@ Update docs when behavior, setup, validation commands, env vars, security
 posture, workflows, or public API contracts change.
 
 - User-facing overview: `README.md`
+- User docs index: `docs/README.md`
 - Product usage: `docs/user-guide.md`
 - Backend details: `backend/README.md`
 - Frontend details: `frontend/README.md`

@@ -1,29 +1,30 @@
 # Data Control Center
 
 **Local-first tool** for profiling, exploring, and querying local data files (CSV, TSV,
-Parquet, JSON, JSON Lines) from one interface. Built for a **single trusted
+Parquet, JSON, JSON Lines, NDJSON) from one interface. Built for a **single trusted
 workstation**—fast EDA and ad-hoc DuckDB SQL, not hosted BI or multi-tenant use.
 This app is **local-only**; see [`SECURITY.md`](SECURITY.md) for the threat model and
 vulnerability reporting.
 
 ## Quick start (no LLM required)
 
-1. From the repo root: `make install` then `make dev` (requires **bash**; see
+1. From the repo root: `make install` then `make dev` (requires **GNU bash**; see
    [Platform notes](#platform-notes)).
-2. Open **`http://127.0.0.1:5173`**, upload files from [`examples/`](examples/) (or follow
-   [`docs/5-minute-tour.md`](docs/5-minute-tour.md)).
-3. Explore **Overview**, **Columns**, **SQL**, and more. **Ask** is optional and needs
-   [Ollama](https://ollama.com); see [User guide — Ask](docs/user-guide.md#ask-tab).
+2. Open **`http://127.0.0.1:5173`**.
+3. **New here?** Follow the [**5-minute tour**](docs/5-minute-tour.md) with
+   [`examples/`](examples/) fixtures before using your own data.
+
+Explore **Overview**, **Columns**, **SQL**, and more. **Ask** is optional and needs
+[Ollama](https://ollama.com); see [User guide — Ask](docs/user-guide.md#ask-tab).
 
 ## Platform notes
 
-- **macOS** — primary platform; Node 22+ or 24+, Python 3.11+, [`uv`](https://docs.astral.sh/uv/), optional Ollama.
-- **Linux** — same `make` targets; install Node and `uv` from your distro or upstream.
+- **macOS** — primary platform; Node 22 (`.nvmrc`), Python 3.11+, [`uv`](https://docs.astral.sh/uv/), optional Ollama.
+- **Linux** — same `make` targets; install Node 22 and `uv` from your distro or upstream.
 - **Windows** — use **WSL2** (e.g. Ubuntu). Native Windows without WSL is untested.
 
-**Prerequisites:** Node from [`.nvmrc`](.nvmrc) (22 LTS or 24+; Node 23 may print
-harmless **`EBADENGINE`** warnings from ESLint). Python 3.11+ and `uv`. Run **`make help`**
-from the repo root for all targets.
+**Prerequisites:** Node **22** from [`.nvmrc`](.nvmrc) (matches CI). Python 3.11+ and `uv`.
+Run **`make help`** from the repo root for all targets.
 
 ## Single-server mode
 
@@ -40,7 +41,8 @@ Workspace metadata lives in **`DCC_WORKSPACE_DB_PATH`** (default **`.dcc_workspa
 relative to the backend cwd). There is **no** in-place migration. After pulling changes
 that alter workspace layout or profile shape, run **`make clean-local`** or delete the
 workspace file by hand—that removes app cache, Ask history, and upload copies under
-**`.dcc_uploads/`**, not your original source files. Schema details:
+**`.dcc_uploads/`**, not your original source files. See [**CHANGELOG**](CHANGELOG.md)
+for breaking changes. Schema details:
 [`backend/README.md`](backend/README.md#workspace-database).
 
 ## API reference
@@ -49,19 +51,24 @@ With the backend running: **`http://127.0.0.1:8000/docs`** (Swagger UI).
 
 ## Architecture
 
-- **Frontend** ([`frontend/`](frontend/)): React + Vite + TypeScript, TanStack Query/Table, Zustand, ECharts, Tailwind
-- **Backend** ([`backend/`](backend/)): FastAPI + DuckDB (views + profile cache) + Polars profiling
+- **Frontend** ([`frontend/`](frontend/)): React, Vite, TypeScript, TanStack Query/Table, Zustand, ECharts, Tailwind, shadcn-style primitives
+- **Backend** ([`backend/`](backend/)): FastAPI, DuckDB, Polars, Pydantic, `uv`
 
 ## Documentation map
 
-| Document | Purpose |
-| --- | --- |
-| [`docs/5-minute-tour.md`](docs/5-minute-tour.md) | First-run walkthrough with `examples/` |
-| [`docs/user-guide.md`](docs/user-guide.md) | Usage, shortcuts, profiles, SQL, Ask |
-| [`backend/README.md`](backend/README.md) | Backend run, **`DCC_*`** configuration |
-| [`frontend/README.md`](frontend/README.md) | Vite proxy, layout, TanStack conventions |
-| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Development setup, validation, pull requests |
-| [`SECURITY.md`](SECURITY.md) | Threat model and vulnerability reporting |
+| Document | Audience | Purpose |
+| --- | --- | --- |
+| [`docs/README.md`](docs/README.md) | Users | Index: tour vs user guide |
+| [`docs/5-minute-tour.md`](docs/5-minute-tour.md) | Users | First-run walkthrough with `examples/` |
+| [`docs/user-guide.md`](docs/user-guide.md) | Users | Day-to-day usage, shortcuts, tabs |
+| [`examples/README.md`](examples/README.md) | Users | Synthetic fixture descriptions |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Contributors | Setup, validation, pull requests |
+| [`backend/README.md`](backend/README.md) | Backend devs | API, **`DCC_*`** config, workspace |
+| [`frontend/README.md`](frontend/README.md) | Frontend devs | Vite proxy, layout, TanStack conventions |
+| [`AGENTS.md`](AGENTS.md) | AI agents | Agent rules; links to CONTRIBUTING for commands |
+| [`SECURITY.md`](SECURITY.md) | Security | Threat model and vulnerability reporting |
+| [`CHANGELOG.md`](CHANGELOG.md) | Upgraders | Breaking changes and release notes |
+| [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) | Community | Contributor Covenant |
 
 ## Known limitations (MVP)
 

@@ -4,13 +4,16 @@ Data Control Center is a local-only desktop development tool. Contributions shou
 preserve that model: the app should remain safe to run on a single trusted workstation
 without assuming hosted deployment, shared tenancy, or account auth.
 
+**AI coding agents:** see [`AGENTS.md`](AGENTS.md) for agent-specific rules; use this
+document for setup, validation, and pull requests.
+
 ## Requirements
 
-- Node.js 22, matching `.nvmrc`
-- Python 3.11 or newer
-- `uv`
-- npm
-- GNU Make
+- **Node.js 22** — use the version in [`.nvmrc`](.nvmrc) (matches CI)
+- **Python 3.11+**
+- **`uv`**
+- **npm**
+- **GNU Make** and **bash** (required for `make dev`)
 
 ## Setup
 
@@ -23,6 +26,10 @@ make dev
 
 `make dev` starts the FastAPI backend on `127.0.0.1:8000` and the Vite frontend on
 `127.0.0.1:5173`.
+
+For manual per-tier commands (separate terminals), see
+[`backend/README.md`](backend/README.md#run-locally) and
+[`frontend/README.md`](frontend/README.md#commands).
 
 ## Development
 
@@ -38,33 +45,13 @@ Run Make from the folder that contains `Makefile`, `backend/`, and `frontend/`.
 | `make frontend` | Vite only |
 | `make build-ui` | Production frontend bundle |
 | `make serve` | Build UI + single server on port 8000 |
-| `make check` | CI-parity validation (see below) |
-| `make check-ci` | `npm ci` then `make check` (after lockfile changes) |
+| `make check` | CI-parity validation (see [Validation](#validation)) |
+| `make check-ci` | `npm ci` then `make check` (after **frontend** lockfile changes) |
 | `make clean-local` | Delete local workspace DB, uploads, coverage, build output |
 
 Root [`package.json`](package.json) delegates `npm run dev`, `lint`, `test`, and `build`
 into `frontend/`. You still need the API when running only the UI (`make backend` in
 another terminal, or `make dev` for both).
-
-### Two terminals (manual)
-
-**Terminal 1 — API**
-
-```bash
-cd backend
-uv sync --extra dev
-uv run uvicorn app.main:app --reload --reload-dir app --host 127.0.0.1 --port 8000
-```
-
-**Terminal 2 — UI**
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Open `http://localhost:5173`. The dev server proxies `/api` to the backend.
 
 ## Validation
 
@@ -77,10 +64,16 @@ make check
 
 This runs the same backend and frontend checks as CI (ruff, pytest, lint, tests,
 coverage, and `npm run build`). **`make check`** uses your current `frontend/node_modules`
-(from `npm install`). After lockfile or dependency changes, run **`make check-ci`** to
-reinstall with **`npm ci`** first (matches the GitHub Actions frontend job).
+(from `npm install`).
 
-Individual steps:
+**After dependency changes:**
+
+| Change | Command before `make check` |
+| --- | --- |
+| `frontend/package-lock.json` | `make check-ci` (runs `npm ci` first) |
+| `backend/uv.lock` or `backend/pyproject.toml` | `cd backend && uv sync --extra dev` (or `make install`) |
+
+Individual steps (for debugging only; prefer `make check`):
 
 ```bash
 cd backend && uv run ruff check app tests
@@ -93,7 +86,14 @@ cd frontend && npm run build
 
 ### CI (GitHub Actions)
 
-On push and pull requests to **`main`** / **`master`**, [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs the same steps as **`make check`**. Additional scheduled jobs run CodeQL, npm audit, pip-audit, and gitleaks. Renovate updates npm, GitHub Actions, and Python dependencies.
+**Primary CI** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on push and
+pull requests to **`main`** and **`master`**, matching **`make check`**.
+
+**Additional security jobs** (CodeQL, npm audit, pip-audit, gitleaks in
+[`.github/workflows/security-audit.yml`](.github/workflows/security-audit.yml) and
+[`.github/workflows/codeql.yml`](.github/workflows/codeql.yml)) run on a schedule and on
+push to **`main`** (not `master`). Renovate updates npm, GitHub Actions, and Python
+dependencies.
 
 ### Coverage
 
@@ -107,6 +107,8 @@ cd frontend && npm audit --audit-level=moderate
 cd backend && uv run pip-audit
 gitleaks detect --source . --redact
 ```
+
+(`gitleaks` is optional locally; CI runs it on `main`.)
 
 ## Project Map
 
@@ -126,6 +128,7 @@ gitleaks detect --source . --redact
 - Update docs when changing setup, security posture, public API behavior, or user workflows.
 - Do not commit local datasets, workspace databases, upload folders, coverage output, build output, or cache files.
 - Treat sample data carefully. Use tiny synthetic fixtures unless a real dataset is explicitly licensed and necessary.
+- Confirm **`make check`** (or **`make check-ci`** after frontend lockfile changes) in the PR description.
 
 ## Local Data Caution
 

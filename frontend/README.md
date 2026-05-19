@@ -6,7 +6,8 @@ Product usage (tabs, shortcuts, Ask): [`docs/user-guide.md`](../docs/user-guide.
 
 ## Prerequisites
 
-Use the Node version from [`.nvmrc`](../.nvmrc) (same as CI).
+**Node.js 22** from [`.nvmrc`](../.nvmrc) (matches CI). Install dependencies via
+**`make install`** from the repo root or **`npm install`** in this directory.
 
 ## Commands
 
@@ -24,6 +25,9 @@ From `frontend/`:
 You can also run **`npm run dev`**, **`npm run lint`**, **`npm test`**, and **`npm run build`**
 from the **repository root** — see root [`package.json`](../package.json); scripts delegate
 into this package.
+
+**Validation:** run **`make check`** from the repo root. After **`frontend/package-lock.json`**
+changes, use **`make check-ci`**. See [`CONTRIBUTING.md`](../CONTRIBUTING.md#validation).
 
 ## API proxy
 
@@ -65,7 +69,7 @@ handles **`PROFILE_NOT_READY`** by polling **`details.job_id`**. Manual refresh 
 
 Tests live next to sources as `*.test.ts(x)`. Thresholds in [`vitest.config.ts`](vitest.config.ts):
 **`COVERAGE_BASELINE`** is **92** for lines and statements (excludes such as `main.tsx` and
-`types.ts`). CI runs `npm run test:coverage` via **`make check`**.
+`types.ts`). CI runs coverage via **`make check`** — see [`CONTRIBUTING.md`](../CONTRIBUTING.md#coverage).
 
 [`src/api/types.ts`](src/api/types.ts) is validated by [`types.test.ts`](src/api/types.test.ts)
 using fixtures in [`src/api/__fixtures__/`](src/api/__fixtures__/); keep fixtures aligned with

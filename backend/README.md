@@ -25,7 +25,9 @@ Using `--reload-dir app` limits Uvicorn reloads to application code so edits und
 do not restart the server (avoids `socket hang up` on the Vite `/api` proxy). From the
 repo root, **`make backend`** uses the same flags.
 
-Validation: run **`make check`** from the repo root (see [`CONTRIBUTING.md`](../CONTRIBUTING.md#validation)).
+**Validation:** run **`make check`** from the repo root. After **`backend/uv.lock`** or
+**`pyproject.toml`** changes, run `cd backend && uv sync --extra dev` first. See
+[`CONTRIBUTING.md`](../CONTRIBUTING.md#validation).
 
 ## Configuration
 
@@ -137,13 +139,7 @@ Ask usage: [`docs/user-guide.md`](../docs/user-guide.md#ask-tab). Agent code:
 
 ## Test and lint
 
-From `backend/`:
-
-```bash
-uv sync --extra dev
-uv run ruff check app tests
-uv run pytest
-```
-
-[`pyproject.toml`](pyproject.toml) fails if **`app/`** line coverage drops below **100%**.
-Full repo validation: **`make check`** (see [`CONTRIBUTING.md`](../CONTRIBUTING.md)).
+[`pyproject.toml`](pyproject.toml) enforces **100%** line coverage on **`app/`**.
+Run **`make check`** from the repo root for CI-parity validation (ruff, pytest, frontend
+checks, and build). See [`CONTRIBUTING.md`](../CONTRIBUTING.md#validation) for individual
+steps and lockfile refresh guidance.

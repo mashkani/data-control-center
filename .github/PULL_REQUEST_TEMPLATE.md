@@ -4,12 +4,9 @@ Describe the change and the user-visible behavior.
 
 ## Validation
 
-- [ ] `cd backend && uv run ruff check app tests`
-- [ ] `cd backend && uv run pytest`
-- [ ] `cd frontend && npm run lint`
-- [ ] `cd frontend && npm test`
-- [ ] `cd frontend && npm run test:coverage`
-- [ ] `cd frontend && npm run build`
+- [ ] [`make check`](CONTRIBUTING.md#validation) from the repo root (CI parity)
+- [ ] [`make check-ci`](CONTRIBUTING.md#validation) if `frontend/package-lock.json` changed
+- [ ] `cd backend && uv sync --extra dev` then `make check` if `backend/uv.lock` or `backend/pyproject.toml` changed
 
 ## Checklist
 
