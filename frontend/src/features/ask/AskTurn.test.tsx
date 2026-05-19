@@ -22,7 +22,7 @@ describe('AskTurn', () => {
     toastMock.success.mockReset()
   })
 
-  it('renders a persisted turn with SQL, result, markdown answer, retry, and model info', async () => {
+  it('renders a persisted turn with SQL, result, markdown answer, retry, and compact timing summary', async () => {
     const user = userEvent.setup()
     const onOpenInSql = vi.fn()
     const onRetry = vi.fn()
@@ -53,8 +53,11 @@ describe('AskTurn', () => {
 
     expect(screen.getByText('Why did revenue drop?')).toBeInTheDocument()
     expect(screen.getByText('Because')).toBeInTheDocument()
-    expect(screen.getByText('Model: qwen')).toBeInTheDocument()
+    expect(screen.getByText('qwen')).toBeInTheDocument()
+    expect(screen.getByText('1 attempt')).toBeInTheDocument()
+    expect(screen.getByText('123ms')).toBeInTheDocument()
     expect(screen.getByText('West')).toBeInTheDocument()
+    expect(screen.queryByText('Model: qwen')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Open in SQL' }))
     expect(onOpenInSql).toHaveBeenCalledWith('SELECT * FROM sales LIMIT 25')
@@ -71,7 +74,27 @@ describe('AskTurn', () => {
     write.mockRestore()
   })
 
-  it('renders query result errors and no-op timeline when there are no attempts', () => {
+  it('shows debug timeline only when turn has an error with attempts', () => {
+    render(
+      <AskTurnCard
+        turn={{
+          turn_id: 't3',
+          conversation_id: 'c1',
+          seq: 3,
+          question: 'Bad query?',
+          error: 'failed',
+          model: 'qwen',
+          elapsed_ms: 50,
+          attempts: [{ sql: 'SELECT 1', error: 'syntax', attempt: 1 }],
+          created_at: 'now',
+        }}
+        onOpenInSql={() => {}}
+      />,
+    )
+    expect(screen.getByText(/Draft SQL/i)).toBeInTheDocument()
+  })
+
+  it('renders query result errors and no timeline when there are no attempts', () => {
     render(
       <AskTurnCard
         turn={{
@@ -89,6 +112,7 @@ describe('AskTurn', () => {
 
     expect(screen.getByText('bad result')).toBeInTheDocument()
     expect(screen.queryByText('Generated SQL')).not.toBeInTheDocument()
+    expect(screen.queryByText(/draft sql/i)).not.toBeInTheDocument()
   })
 
   it('renders streaming card states including explanation, preview answer, retry gating, and query error', async () => {

@@ -10,6 +10,9 @@ const ROWS: Array<{ keys: string; action: string }> = [
   { keys: 'g a', action: 'Go to Ask' },
   { keys: 'g y', action: 'Go to SQL' },
   { keys: 'r', action: 'Invalidate queries / soft refresh' },
+  { keys: '⌘ Enter', action: 'Ask: submit · SQL: run query / selection' },
+  { keys: '⌘ Shift F', action: 'SQL: format query' },
+  { keys: '⌘ S', action: 'SQL: open save dialog' },
 ]
 
 export function ShortcutCheatsheet() {
@@ -20,7 +23,8 @@ export function ShortcutCheatsheet() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent title="Keyboard shortcuts" className="max-w-md">
         <p className="text-sm text-fg-muted">
-          Shortcuts are ignored while typing in inputs, textareas, or the SQL editor.
+          Global shortcuts are ignored while typing in inputs or textareas. The SQL editor also
+          handles ⌘ Enter, ⌘ Shift F, and ⌘ S locally.
         </p>
         <table className="mt-4 w-full text-sm">
           <caption className="sr-only">Application keyboard shortcuts</caption>

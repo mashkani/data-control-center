@@ -35,5 +35,13 @@ describe('uiStore', () => {
     expect(useUiStore.getState().columnsTableHidden.ds_x).toContain('name')
     useUiStore.getState().toggleColumnTableVisibility('ds_x', 'name')
     expect(useUiStore.getState().columnsTableHidden.ds_x).not.toContain('name')
+
+    useUiStore.getState().setColumnsDensity('compact')
+    expect(useUiStore.getState().columnsDensity).toBe('compact')
+
+    useUiStore.getState().setSqlEditorHeight(360)
+    expect(useUiStore.getState().sqlEditorHeight).toBe(360)
+    useUiStore.getState().setSqlSchemaCollapsed(false)
+    expect(useUiStore.getState().sqlSchemaCollapsed).toBe(false)
   })
 })

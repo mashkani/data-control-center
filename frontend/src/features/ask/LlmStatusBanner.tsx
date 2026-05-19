@@ -22,8 +22,7 @@ export function LlmStatusBanner() {
     >
       <p>
         Ollama is not reachable at the configured endpoint, so{' '}
-        <strong className="text-fg">Ask</strong> may not work. Columns, Quality, Samples, and SQL are
-        unaffected.
+        <strong className="text-fg">Ask</strong> may not work. Columns, Samples, and SQL are unaffected.
       </p>
       <p className="mt-1">
         <a

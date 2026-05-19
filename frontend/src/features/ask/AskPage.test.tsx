@@ -121,6 +121,7 @@ describe('AskPage', () => {
     wrap(<AskPage />)
     await waitFor(() => expect(screen.getByRole('status')).toBeInTheDocument())
     expect(screen.getByText(/Ollama is not reachable/i)).toBeInTheDocument()
+    expect(screen.getByText(/Columns, Samples, and SQL are unaffected/)).toBeInTheDocument()
     expect(screen.getByText(/Could not reach local LLM endpoint/)).toBeInTheDocument()
   })
 
@@ -139,7 +140,8 @@ describe('AskPage', () => {
     expect(screen.getByRole('button', { name: /Ask \(stream\)/ })).toBeDisabled()
   })
 
-  it('lists registered dataset id as scope chip when datasets exist', async () => {
+  it('lists dataset name in scope options when datasets exist', async () => {
+    const user = userEvent.setup()
     h.listDatasets.mockResolvedValue([
       {
         dataset_id: 'ds_001',
@@ -154,7 +156,29 @@ describe('AskPage', () => {
     ])
     useUiStore.setState({ activeDatasetId: 'ds_001' })
     wrap(<AskPage />)
-    await waitFor(() => expect(screen.getByRole('button', { name: 'ds_001' })).toBeInTheDocument())
+    await user.click(await screen.findByRole('button', { name: 'Options' }))
+    await waitFor(() => expect(screen.getByText('a.csv')).toBeInTheDocument())
+  })
+
+  it('shows suggested prompts even when turns exist', async () => {
+    h.listAskTurns.mockResolvedValue([
+      {
+        turn_id: 't1',
+        conversation_id: 'c1',
+        seq: 1,
+        question: 'Old?',
+        attempts: [],
+        created_at: 'now',
+      },
+    ])
+    useUiStore.setState({ activeConversationId: 'c1', activeDatasetId: 'ds_001' })
+    wrap(<AskPage />)
+    await waitFor(() => expect(screen.getByRole('button', { name: /How many rows/i })).toBeInTheDocument())
+  })
+
+  it('does not show removed static info copy', async () => {
+    wrap(<AskPage />)
+    expect(screen.queryByText(/Chats are saved in the workspace DB/i)).not.toBeInTheDocument()
   })
 
   it('submits and renders answer and opens SQL via store', async () => {

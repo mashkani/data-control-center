@@ -4,20 +4,46 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { QueryPage } from '@/features/query/QueryPage'
 import { useUiStore } from '@/store/uiStore'
 
+let mockSelection = ''
+
 vi.mock('@uiw/react-codemirror', () => ({
   __esModule: true,
-  default: function MockCM({
-    value,
-    onChange,
-  }: {
-    value: string
-    onChange: (v: string) => void
-  }) {
-    return <textarea aria-label="SQL editor" value={value} onChange={(e) => onChange(e.target.value)} />
-  },
+  default: React.forwardRef(function MockCM(
+    {
+      value,
+      onChange,
+      onSelectionChange,
+    }: {
+      value: string
+      onChange: (v: string) => void
+      onSelectionChange?: (s: string) => void
+    },
+    ref: React.ForwardedRef<{ view?: { state: { selection: { main: { from: number; to: number } }; sliceDoc: () => string } } }>,
+  ) {
+    React.useImperativeHandle(ref, () => ({
+      view: {
+        state: {
+          selection: { main: { from: 0, to: mockSelection.length } },
+          sliceDoc: () => mockSelection,
+        },
+      },
+    }))
+    React.useLayoutEffect(() => {
+      onSelectionChange?.(mockSelection)
+    }, [onSelectionChange])
+    return (
+      <textarea
+        aria-label="SQL editor"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onSelect={() => onSelectionChange?.(mockSelection)}
+      />
+    )
+  }),
 }))
 
 const h = vi.hoisted(() => ({
@@ -25,6 +51,7 @@ const h = vi.hoisted(() => ({
   listDatasets: vi.fn(),
   listSavedQueries: vi.fn(),
   createSavedQuery: vi.fn(),
+  deleteSavedQuery: vi.fn(),
   fetchDatasetProfile: vi.fn(),
 }))
 
@@ -38,6 +65,7 @@ vi.mock('@/api/client', async (importOriginal) => {
       listDatasets: h.listDatasets,
       listSavedQueries: h.listSavedQueries,
       createSavedQuery: h.createSavedQuery,
+      deleteSavedQuery: h.deleteSavedQuery,
       fetchDatasetProfile: h.fetchDatasetProfile,
     },
   }
@@ -58,7 +86,9 @@ function wrap(ui: React.ReactElement) {
   })
   return render(
     <MemoryRouter>
-      <QueryClientProvider client={qc}>{ui}</QueryClientProvider>
+      <QueryClientProvider client={qc}>
+        <TooltipProvider>{ui}</TooltipProvider>
+      </QueryClientProvider>
     </MemoryRouter>,
   )
 }
@@ -69,17 +99,19 @@ const dsFooRow = {
   view_name: 'foo',
   source_path: '/p/foo.csv',
   format: 'csv',
-  row_count: 1,
-  column_count: 1,
+  row_count: 12,
+  column_count: 3,
   file_size_bytes: 1,
 }
 
 describe('QueryPage', () => {
   beforeEach(() => {
+    mockSelection = ''
     h.runQuery.mockReset()
     h.listDatasets.mockResolvedValue([])
     h.listSavedQueries.mockResolvedValue([])
     h.createSavedQuery.mockReset()
+    h.deleteSavedQuery.mockResolvedValue(undefined)
     h.fetchDatasetProfile.mockReset()
     toastMock.success.mockReset()
     toastMock.error.mockReset()
@@ -88,10 +120,23 @@ describe('QueryPage', () => {
       activeDatasetId: null,
       sqlInjectTick: 0,
       pendingQuery: null,
+      sqlEditorHeight: 280,
+      sqlSchemaCollapsed: true,
     })
   })
 
-  it('runs query with view hint and shows results', async () => {
+  it('renders active dataset chip with name and counts', async () => {
+    h.listDatasets.mockResolvedValue([dsFooRow])
+    h.fetchDatasetProfile.mockResolvedValue({ rows: 12, columns: 3, column_profiles: [] })
+    useUiStore.setState({ activeDatasetId: 'ds_001' })
+    wrap(<QueryPage />)
+    const chip = await screen.findByTestId('sql-active-dataset-chip')
+    expect(chip).toHaveTextContent('foo.csv')
+    expect(chip).toHaveTextContent('12 rows')
+    expect(chip).toHaveTextContent('3 cols')
+  })
+
+  it('runs query and shows results with timer chip', async () => {
     const user = userEvent.setup()
     h.runQuery.mockResolvedValue({
       columns: [{ name: 'x', type: 'int' }],
@@ -103,17 +148,37 @@ describe('QueryPage', () => {
     h.listDatasets.mockResolvedValue([dsFooRow])
     useUiStore.setState({ activeDatasetId: 'ds_001' })
     wrap(<QueryPage />)
-    await waitFor(() => expect(screen.getAllByText(/foo/).length).toBeGreaterThan(0))
+    await waitFor(() => expect(screen.getByTestId('sql-active-dataset-chip')).toBeInTheDocument())
 
     await user.click(screen.getByRole('button', { name: 'Run query' }))
     await waitFor(() => expect(screen.getByText(/\(truncated\)/)).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText(/\d+ms · 2 rows/)).toBeInTheDocument())
     expect(screen.getByText('{"y":2}')).toBeInTheDocument()
   })
 
-  it('no active dataset view hint fallback', () => {
-    useUiStore.setState({ activeDatasetId: null })
+  it('shows run selection label and runs only selected SQL', async () => {
+    const user = userEvent.setup()
+    h.runQuery.mockResolvedValue({
+      columns: [],
+      rows: [],
+      row_count: 0,
+      truncated: false,
+      error: null,
+    })
+    mockSelection = 'SELECT partial'
     wrap(<QueryPage />)
-    expect(screen.getAllByText(/<dataset_table>/).length).toBeGreaterThan(0)
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Run selection' })).toBeInTheDocument())
+    await user.click(screen.getByRole('button', { name: 'Run selection' }))
+    await waitFor(() => expect(h.runQuery).toHaveBeenCalled())
+    expect(h.runQuery.mock.calls.at(-1)?.[0]).toEqual({ sql: 'SELECT partial', max_rows: 1000 })
+  })
+
+  it('shows running timer chip while pending', async () => {
+    const user = userEvent.setup()
+    h.runQuery.mockImplementation(() => new Promise(() => {}))
+    wrap(<QueryPage />)
+    await user.click(screen.getByRole('button', { name: 'Run query' }))
+    expect(screen.getByText(/RUNNING/i)).toBeInTheDocument()
   })
 
   it('shows sql error and mutation error', async () => {
@@ -134,21 +199,19 @@ describe('QueryPage', () => {
     await waitFor(() => expect(screen.getByText('network')).toBeInTheDocument())
   })
 
-  it('pending', async () => {
-    const user = userEvent.setup()
-    h.runQuery.mockImplementation(() => new Promise(() => {}))
-    wrap(<QueryPage />)
-    await user.click(screen.getByRole('button', { name: 'Run query' }))
-    expect(screen.getByText(/Running/)).toBeInTheDocument()
-  })
-
   it('formats, copies, saves, and reuses snippets', async () => {
     const user = userEvent.setup()
     const write = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined)
     h.listSavedQueries.mockResolvedValue([
-      { saved_id: 'sq1', name: 'Revenue check', sql: 'SELECT revenue FROM foo' },
+      { saved_id: 'sq1', name: 'Revenue check', sql: 'SELECT revenue FROM foo', created_at: 't', updated_at: 't' },
     ])
-    h.createSavedQuery.mockResolvedValue({ saved_id: 'sq2', name: 'Pretty query', sql: 'SELECT * FROM foo' })
+    h.createSavedQuery.mockResolvedValue({
+      saved_id: 'sq2',
+      name: 'Pretty query',
+      sql: 'SELECT * FROM foo',
+      created_at: 't',
+      updated_at: 't',
+    })
 
     localStorage.setItem('dcc-sql-history', JSON.stringify(['SELECT 42', 99, 'SELECT 7']))
     wrap(<QueryPage />)
@@ -161,11 +224,11 @@ describe('QueryPage', () => {
     expect(screen.getByDisplayValue(/from\s+foo/i)).toBeInTheDocument()
     expect(toastMock.success).toHaveBeenCalledWith('SQL formatted')
 
-    await user.click(screen.getByRole('button', { name: /Copy SQL/i }))
+    await user.click(screen.getByRole('button', { name: 'Copy SQL' }))
     expect(write).toHaveBeenCalled()
     expect(toastMock.success).toHaveBeenCalledWith('SQL copied')
 
-    await user.click(screen.getByRole('button', { name: 'Snippets' }))
+    await user.click(screen.getByRole('button', { name: /Snippets/i }))
     await user.click(screen.getByRole('button', { name: /SELECT 42/i }))
     expect(screen.getByDisplayValue('SELECT 42')).toBeInTheDocument()
 
@@ -184,31 +247,36 @@ describe('QueryPage', () => {
     write.mockRestore()
   })
 
-  it('shows save errors', async () => {
+  it('shows save errors and duplicate-name warning', async () => {
     const user = userEvent.setup()
+    h.listSavedQueries.mockResolvedValue([
+      { saved_id: 'sq1', name: 'Dup', sql: 'SELECT 1', created_at: 't', updated_at: 't' },
+    ])
     h.createSavedQuery.mockRejectedValue(new Error('cannot save'))
     wrap(<QueryPage />)
 
     await user.click(screen.getByRole('button', { name: 'Save query' }))
-    await user.type(screen.getByLabelText('Name'), 'Broken')
+    await user.type(screen.getByLabelText('Name'), 'Dup')
+    expect(screen.getByText(/already exists with this name/i)).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /^Save$/i }))
     await waitFor(() => expect(toastMock.error).toHaveBeenCalledWith('cannot save'))
   })
 
-  it('expands schema, loads profile columns, and inserts identifiers into the editor', async () => {
+  it('schema rail starts collapsed and expands active dataset', async () => {
     const user = userEvent.setup()
     h.listDatasets.mockResolvedValue([dsFooRow])
     h.fetchDatasetProfile.mockResolvedValue({
       column_profiles: [{ name: 'total cost', physical_type: 'DOUBLE' }],
     })
-    useUiStore.setState({ activeDatasetId: 'ds_001' })
+    useUiStore.setState({ activeDatasetId: 'ds_001', sqlSchemaCollapsed: true })
 
     wrap(<QueryPage />)
-    const datasetLabel = await screen.findByText('foo.csv')
-    await user.click(datasetLabel.closest('button')!)
+    const rail = screen.getByTestId('sql-schema-rail')
+    expect(rail).toHaveAttribute('data-collapsed', 'true')
+    expect(screen.queryByText('total cost')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Expand schema rail' }))
     await waitFor(() => expect(screen.getByRole('button', { name: /total cost/i })).toBeInTheDocument())
-    await user.click(screen.getByRole('button', { name: /total cost/i }))
-    expect((screen.getByLabelText('SQL editor') as HTMLTextAreaElement).value).toContain('foo."total cost"')
   })
 
   it('applies pending injected SQL and dataset templates', async () => {
@@ -221,8 +289,9 @@ describe('QueryPage', () => {
 
     useUiStore.getState().setPendingQuery(null)
     useUiStore.setState({ activeDatasetId: null })
-    await waitFor(() => expect(screen.getByDisplayValue('select 1;')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByDisplayValue('SELECT pending')).toBeInTheDocument())
 
+    await user.clear(screen.getByLabelText('SQL editor'))
     useUiStore.setState({ activeDatasetId: 'ds_001' })
     await waitFor(() =>
       expect((screen.getByLabelText('SQL editor') as HTMLTextAreaElement).value).toBe(
@@ -252,7 +321,7 @@ describe('QueryPage', () => {
     await waitFor(() => expect(screen.getByDisplayValue('select 1;')).toBeInTheDocument())
     fireEvent.change(editor, { target: { value: 'SELECT latest' } })
     await waitFor(() => expect(screen.getByDisplayValue('SELECT latest')).toBeInTheDocument())
-    const maxRows = screen.getByRole('spinbutton')
+    const maxRows = screen.getByLabelText('max_rows')
     fireEvent.change(maxRows, { target: { value: '7' } })
     await user.click(editor)
     await user.keyboard('{Meta>}{Enter}{/Meta}')

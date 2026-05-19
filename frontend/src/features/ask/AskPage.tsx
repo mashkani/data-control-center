@@ -93,16 +93,14 @@ export function AskPage() {
         <ConversationList />
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-hidden">
-          <div className="shrink-0 text-xs text-fg-muted">
-            Chats are saved in the workspace DB. Follow-up questions reuse recent turns for context.
-          </div>
-
           <LlmStatusBanner />
 
-          {profile && (!activeConversationId || turns.length === 0) ? (
-            <div className="shrink-0">
-              <SuggestedPrompts profile={profile} onPick={setComposerText} />
-            </div>
+          {profile ? (
+            <SuggestedPrompts
+              profile={profile}
+              onPick={setComposerText}
+              collapsed={turns.length > 0}
+            />
           ) : null}
 
           <AskThread

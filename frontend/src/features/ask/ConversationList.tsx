@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { MessageSquarePlus, Pencil, Trash2 } from 'lucide-react'
+import { Info, MessageSquarePlus, Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Sheet } from '@/components/ui/sheet'
 import { Dialog, DialogContent, DialogFooter } from '@/components/ui/dialog'
+import { Tooltip } from '@/components/ui/tooltip'
 import { api } from '@/api/client'
+import { formatRelativeTime } from '@/lib/format'
 import { useUiStore } from '@/store/uiStore'
 import { cn } from '@/lib/utils'
 
@@ -19,6 +21,11 @@ function useNarrowViewport() {
     return () => mq.removeEventListener('change', upd)
   }, [])
   return narrow
+}
+
+function parseUpdatedAt(updatedAt: string): number {
+  const ms = Date.parse(updatedAt)
+  return Number.isFinite(ms) ? ms : Date.now()
 }
 
 export function ConversationList() {
@@ -64,7 +71,21 @@ export function ConversationList() {
   const listContent = (
     <>
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-fg-muted">Conversations</h2>
+        <div className="flex items-center gap-1">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-fg-muted">Conversations</h2>
+          <Tooltip
+            content="Chats are saved in the workspace DB. Follow-up questions reuse recent turns for context."
+            className="max-w-xs text-xs"
+          >
+            <button
+              type="button"
+              className="rounded p-0.5 text-fg-muted hover:bg-white/10 hover:text-fg"
+              aria-label="About conversations"
+            >
+              <Info className="h-3.5 w-3.5" />
+            </button>
+          </Tooltip>
+        </div>
         <Button
           type="button"
           size="sm"
@@ -83,7 +104,7 @@ export function ConversationList() {
           <div
             key={c.conversation_id}
             className={cn(
-              'group relative rounded-lg border border-transparent',
+              'group relative rounded-lg border border-transparent focus-within:border-border-default',
               activeId === c.conversation_id && 'border-border-accent bg-white/10',
             )}
           >
@@ -102,16 +123,18 @@ export function ConversationList() {
               <>
                 <button
                   type="button"
-                  className="w-full rounded-lg px-2 py-2 text-left text-sm hover:bg-white/5"
+                  className="w-full rounded-lg px-2 py-2 pr-14 text-left text-sm hover:bg-white/5"
                   onClick={() => {
                     setActiveId(c.conversation_id)
                     setMobileOpen(false)
                   }}
                 >
                   <div className="truncate font-medium">{c.title}</div>
-                  <div className="truncate text-[10px] text-fg-muted">{c.conversation_id}</div>
+                  <div className="truncate text-[10px] text-fg-muted">
+                    {formatRelativeTime(parseUpdatedAt(c.updated_at))}
+                  </div>
                 </button>
-                <div className="absolute right-1 top-1 flex gap-0.5 opacity-0 group-hover:opacity-100">
+                <div className="absolute right-1 top-1 flex gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
                   <Button
                     type="button"
                     variant="ghost"

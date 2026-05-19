@@ -70,7 +70,12 @@ the UI keeps the sampled value and labels it using profile metadata.
 
 ## SQL tab
 
-- **Run:** **⌘+Enter** (macOS) or **Ctrl+Enter**, or **Run query**.
+- **Run:** **⌘+Enter** (macOS) or **Ctrl+Enter**, or **Run query** / **Run selection**
+  when part of the buffer is selected.
+- **Format:** toolbar **Format** or **⌘+Shift+F** in the editor.
+- **Save:** toolbar save icon or **⌘+S** in the editor (opens the save dialog).
+- **Schema rail:** collapsed by default on the right; expand to browse the active dataset
+  columns and insert identifiers. Use **Other datasets** for the rest.
 - **Results grid:** Sortable columns, resizable widths, sticky **#** index, multi-cell
   selection (drag or **Shift+arrow**), **⌘/Ctrl+C** as **TSV**, **Copy JSON**,
   **Export CSV**, double-click for full cell value. Large result sets use virtualized scrolling.
@@ -91,18 +96,22 @@ Optional local LLM assistant via [Ollama](https://ollama.com).
    For a different default, set **`DCC_LLM_MODEL`** when starting the backend (see
    [`backend/README.md`](../backend/README.md#local-llm-ask)). Pulling models remains a
    manual Ollama step; the app only lists models already installed locally.
-3. Keep the Ollama daemon running, then **`make dev`**. Open **Ask**, choose any installed
-   model from the **Ollama model** picker, type a question, and optional **max_rows** for
-   the result preview.
+3. Keep the Ollama daemon running, then **`make dev`**. Open **Ask**, open **Options**
+   for model, row limit, and dataset scope, type a question, and send.
 
 The backend drafts a read-only **`SELECT`/`WITH`**, runs it through the same validation
 as the SQL tab, and returns a concise answer. Open generated SQL in the **SQL** tab from
 the turn UI.
 
+**Composer:** A compact sticky bar with **Ask (stream)** on the right. Summary chips show
+the current model, max preview rows, and dataset scope; click a chip or **Options** to change
+settings. Suggested prompt chips stay above the composer (collapse to a strip when the thread
+has turns).
+
 **Submit / stop:** **⌘+Enter** or **Ctrl+Enter** to submit; **Esc** stops an in-flight stream.
 
 **Conversations:** Prior turns are stored in the workspace and can be resumed from the
-Ask sidebar.
+Ask sidebar (hover the **(i)** icon on **Conversations** for details).
 
 **HTTP API:** **`GET /api/llm/models`** lists locally installed Ollama models.
 **`POST /api/agent/ask/stream`** accepts an optional **`model`** field (defaults to

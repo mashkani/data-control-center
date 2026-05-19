@@ -87,9 +87,12 @@ describe('AskComposer', () => {
   })
 
   it('sends on Meta+Enter with scoped dataset_ids (one dataset toggled off)', async () => {
+    const user = userEvent.setup()
     renderHarness(<Harness />)
-    await waitFor(() => expect(screen.getByRole('button', { name: 'ds_b' })).toBeInTheDocument())
-    fireEvent.click(screen.getByRole('button', { name: 'ds_b' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Options' })).toBeInTheDocument())
+    await user.click(screen.getByRole('button', { name: 'Options' }))
+    const bCheckbox = await screen.findByRole('checkbox', { name: /b\.csv/i })
+    await user.click(bCheckbox)
     fireEvent.change(screen.getByPlaceholderText(/plain language/i), { target: { value: 'Hello' } })
     fireEvent.keyDown(screen.getByPlaceholderText(/plain language/i), {
       key: 'Enter',
@@ -107,10 +110,19 @@ describe('AskComposer', () => {
     expect(payload.model).toBe('qwen3:4b')
   })
 
-  it('calls onStop on Escape while busy', async () => {
-    renderHarness(
+  it('shows dataset names in scope options, not raw ids as chips', async () => {
+    const user = userEvent.setup()
+    renderHarness(<Harness />)
+    await user.click(await screen.findByRole('button', { name: 'Options' }))
+    expect(screen.getByText('a.csv')).toBeInTheDocument()
+    expect(screen.getByText('b.csv')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'ds_a' })).not.toBeInTheDocument()
+  })
+
+  it('calls onStop on Escape while busy and shows Stop only when busy', async () => {
+    const { rerender } = renderHarness(
       <AskComposer
-        busy
+        busy={false}
         question="x"
         onQuestionChange={() => {}}
         onSend={mockSend}
@@ -118,11 +130,28 @@ describe('AskComposer', () => {
         recallQuestion={null}
       />,
     )
+    expect(screen.queryByRole('button', { name: /Stop \(Esc\)/ })).not.toBeInTheDocument()
+
+    rerender(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <AskComposer
+            busy
+            question="x"
+            onQuestionChange={() => {}}
+            onSend={mockSend}
+            onStop={mockStop}
+            recallQuestion={null}
+          />
+        </TooltipProvider>
+      </QueryClientProvider>,
+    )
     fireEvent.keyDown(screen.getByPlaceholderText(/plain language/i), {
       key: 'Escape',
       bubbles: true,
     })
     expect(mockStop).toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: /Stop \(Esc\)/ })).toBeInTheDocument()
   })
 
   it('recalls last question on ArrowUp when empty', async () => {
@@ -134,20 +163,18 @@ describe('AskComposer', () => {
 
   it('uses null datasetIds when all datasets in scope', async () => {
     renderHarness(<Harness />)
-    await waitFor(() => expect(screen.getByRole('button', { name: 'All datasets' })).toBeInTheDocument())
     fireEvent.change(screen.getByPlaceholderText(/plain language/i), { target: { value: 'Q' } })
     fireEvent.click(screen.getByRole('button', { name: /Ask \(stream\)/ }))
     await waitFor(() => expect(mockSend).toHaveBeenCalled())
     expect(mockSend.mock.calls[0]![0].datasetIds).toBeNull()
   })
 
-  it('sends the selected Ollama model and saves it locally', async () => {
+  it('sends the selected Ollama model via dropdown and saves it locally', async () => {
     const user = userEvent.setup()
     renderHarness(<Harness />)
-    const select = await screen.findByLabelText(/Ollama model/i)
-    await screen.findByRole('option', { name: 'llama3.2:3b' })
-    await user.selectOptions(select, 'llama3.2:3b')
-    await waitFor(() => expect(select).toHaveValue('llama3.2:3b'))
+    await user.click(await screen.findByRole('button', { name: 'Options' }))
+    await user.click(screen.getByRole('button', { name: /Ollama model/i }))
+    await user.click(await screen.findByRole('menuitemradio', { name: /llama3\.2:3b/i }))
     fireEvent.change(screen.getByPlaceholderText(/plain language/i), { target: { value: 'Q' } })
     fireEvent.click(screen.getByRole('button', { name: /Ask \(stream\)/ }))
     await waitFor(() => expect(mockSend).toHaveBeenCalled())
@@ -158,13 +185,25 @@ describe('AskComposer', () => {
   it('reuses a saved model when it is still installed', async () => {
     localStorage.setItem('dcc-ask-llm-model', 'llama3.2:3b')
     renderHarness(<Harness />)
-    await waitFor(() => expect(screen.getByLabelText(/Ollama model/i)).toHaveValue('llama3.2:3b'))
+    await waitFor(() => expect(screen.getByRole('button', { name: /llama3\.2:3b/i })).toBeInTheDocument())
   })
 
   it('falls back to the default model when a saved model is stale', async () => {
     localStorage.setItem('dcc-ask-llm-model', 'missing:model')
     renderHarness(<Harness />)
-    await waitFor(() => expect(screen.getByLabelText(/Ollama model/i)).toHaveValue('qwen3:4b'))
+    await waitFor(() => expect(screen.getByRole('button', { name: /qwen3:4b/i })).toBeInTheDocument())
+  })
+
+  it('keeps explicit scope when all-datasets master is toggled off', async () => {
+    const user = userEvent.setup()
+    renderHarness(<Harness />)
+    await user.click(await screen.findByRole('button', { name: 'Options' }))
+    const allCheckbox = screen.getByRole('checkbox', { name: /All datasets/i })
+    expect(allCheckbox).toBeChecked()
+    await user.click(allCheckbox)
+    expect(allCheckbox).not.toBeChecked()
+    expect(screen.getByRole('checkbox', { name: /a\.csv/i })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: /b\.csv/i })).toBeChecked()
   })
 
   it('allows Ask with the configured default when model listing is unreachable', async () => {
@@ -175,7 +214,7 @@ describe('AskComposer', () => {
       detail: 'Could not reach local LLM endpoint.',
     })
     renderHarness(<Harness />)
-    await waitFor(() => expect(screen.getByLabelText(/Ollama model/i)).toHaveValue('qwen3:4b'))
+    await waitFor(() => expect(screen.getByRole('button', { name: /qwen3:4b/i })).toBeInTheDocument())
     fireEvent.change(screen.getByPlaceholderText(/plain language/i), { target: { value: 'Q' } })
     fireEvent.click(screen.getByRole('button', { name: /Ask \(stream\)/ }))
     await waitFor(() => expect(mockSend).toHaveBeenCalled())

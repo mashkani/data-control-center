@@ -27,6 +27,8 @@ versioning once formal releases begin.
 
 - Frontend: removed the **Overview** tab; the app opens on **Columns** by default (`/` redirects to `/columns`).
 - Frontend: removed the **Quality** tab; the header still shows the quality score, column flags and filters live on **Columns**, `/quality` redirects to `/columns`, and the profile-diff dialog was removed from the UI (API unchanged).
+- Frontend **Ask** composer: compact sticky bar, **Options** popover (model, row limit, dataset scope by name), always-on suggested prompts, real turn timing summary, conversation list polish.
+- Frontend **SQL** workspace: active-dataset chip, consolidated toolbar, run selection, resizable editor/results split, collapsible schema rail, snippet templates, run timer chip, and editor shortcuts (**⌘+Shift+F**, **⌘+S**).
 - **`GET /api/datasets/{id}/profile`** no longer blocks on `build_profile`; returns **`PROFILE_NOT_READY`** with **`job_id`** when the cache is empty.
 - Upload/register queue profile refresh jobs; refresh endpoint dedupes active profile jobs.
 - Datasets API split into `datasets_upload`, `datasets_profile`, `datasets_inspect`, and `datasets_jobs` modules (URLs unchanged).

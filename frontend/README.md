@@ -47,7 +47,8 @@ editing [`backend/app/`](../backend/app) (see root **`Makefile`**: `--reload-dir
   ([`types.ts`](src/api/types.ts)).
 - **`src/lib/sql.ts`** — SQL identifier quoting and snippet builders ([`sql.test.ts`](src/lib/sql.test.ts)).
 - **`src/hooks/useDisposableEChart.ts`** — ECharts lifecycle ([`useDisposableEChart.test.tsx`](src/hooks/useDisposableEChart.test.tsx)).
-- **`src/store/uiStore.ts`** — Zustand UI state (active dataset, drawer, filters).
+- **`src/store/uiStore.ts`** — Zustand UI state (active dataset, drawer, filters, SQL editor
+  split height, schema rail collapse).
 
 ### TanStack Query keys
 
@@ -60,7 +61,9 @@ Prefer **`useDatasetProfile`** (or **`api.fetchDatasetProfile`**) for profile lo
 handles **`PROFILE_NOT_READY`** by polling **`details.job_id`**. Manual refresh uses
 **`api.refreshProfile`** and job polling before invalidating profile-related keys.
 
-**Ask** uses **`askAgentStream`** (SSE) only. Profiles are **v4**-shaped (`entity_id_columns`,
+**Ask** uses **`askAgentStream`** (SSE) only. The composer keeps model, max preview rows,
+and dataset scope in an **Options** popover; suggested prompts stay visible above the input.
+Profiles are **v4**-shaped (`entity_id_columns`,
 `primary_grain_key_columns`, `primary_temporal_column`, etc.).
 
 ## Tests and coverage

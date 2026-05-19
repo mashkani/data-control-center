@@ -14,6 +14,12 @@ import { AskStageTimeline } from '@/features/ask/AskStageTimeline'
 import type { AskSqlAttempt, AskStageEntry } from '@/hooks/useAskStream'
 import { toast } from 'sonner'
 
+function formatElapsedMs(ms: number | null | undefined): string {
+  if (ms == null || Number.isNaN(ms)) return '—'
+  if (ms < 1000) return `${Math.round(ms)}ms`
+  return `${(ms / 1000).toFixed(1)}s`
+}
+
 function SqlBlock({
   sql,
   onOpenInSql,
@@ -92,6 +98,29 @@ function adaptAttemptsToTimeline(attempts: Record<string, unknown>[]): AskSqlAtt
   return out
 }
 
+function TurnMetaSummary({
+  model,
+  attemptCount,
+  elapsedMs,
+}: {
+  model?: string | null
+  attemptCount: number
+  elapsedMs?: number | null
+}) {
+  const attemptLabel = attemptCount === 1 ? '1 attempt' : `${attemptCount} attempts`
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-[10px] text-fg-muted">
+      {model ? (
+        <span className="rounded-full border border-border-default bg-black/20 px-2 py-0.5 font-mono text-[10px] text-fg">
+          {model}
+        </span>
+      ) : null}
+      {attemptCount > 0 ? <span>{attemptLabel}</span> : null}
+      {elapsedMs != null ? <span>{formatElapsedMs(elapsedMs)}</span> : null}
+    </div>
+  )
+}
+
 export function AskTurnCard({
   turn,
   onOpenInSql,
@@ -113,11 +142,19 @@ export function AskTurnCard({
       : []
 
   const displayAnswer = turn.answer ?? ''
+  const showDebugTimeline = !!turn.error && attempts.length > 0
 
   return (
     <div className="space-y-3 rounded-xl border border-border-default bg-white/[0.04] p-4">
-      <div className="rounded-lg bg-black/25 px-3 py-2 text-sm text-white/95">{turn.question}</div>
-      {attempts.length > 0 ? (
+      <div className="space-y-1.5">
+        <div className="rounded-lg bg-black/25 px-3 py-2 text-sm text-white/95">{turn.question}</div>
+        <TurnMetaSummary
+          model={turn.model}
+          attemptCount={attempts.length}
+          elapsedMs={turn.elapsed_ms}
+        />
+      </div>
+      {showDebugTimeline ? (
         <AskStageTimeline
           stages={stages}
           sqlAttempts={attempts}
@@ -149,7 +186,6 @@ export function AskTurnCard({
           Retry
         </Button>
       ) : null}
-      {turn.model ? <p className="text-[10px] text-fg-muted">Model: {turn.model}</p> : null}
     </div>
   )
 }
@@ -191,7 +227,12 @@ export function StreamingAskCard({
       className="space-y-3 rounded-xl border border-border-default border-dashed bg-white/[0.06] p-4"
       aria-busy={busy}
     >
-      <div className="rounded-lg bg-black/25 px-3 py-2 text-sm text-white/95">{question}</div>
+      <div className="space-y-1.5">
+        <div className="rounded-lg bg-black/25 px-3 py-2 text-sm text-white/95">{question}</div>
+        {model ? (
+          <TurnMetaSummary model={model} attemptCount={0} elapsedMs={totalMs} />
+        ) : null}
+      </div>
       {(busy || stages.length > 0) && (
         <AskStageTimeline stages={stages} sqlAttempts={sqlAttempts} totalMs={totalMs} busy={busy} />
       )}
@@ -222,7 +263,6 @@ export function StreamingAskCard({
           Retry
         </Button>
       ) : null}
-      {model ? <p className="text-[10px] text-fg-muted">Model: {model}</p> : null}
     </div>
   )
 }

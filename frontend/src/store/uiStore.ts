@@ -37,6 +37,10 @@ type UiState = {
   setColumnsTableHidden: (datasetId: string, ids: string[]) => void
   columnsDensity: ColumnsDensity
   setColumnsDensity: (d: ColumnsDensity) => void
+  sqlEditorHeight: number
+  setSqlEditorHeight: (h: number) => void
+  sqlSchemaCollapsed: boolean
+  setSqlSchemaCollapsed: (v: boolean) => void
 }
 
 export const useUiStore = create<UiState>((set, get) => ({
@@ -90,4 +94,8 @@ export const useUiStore = create<UiState>((set, get) => ({
     })),
   columnsDensity: 'comfortable',
   setColumnsDensity: (d) => set({ columnsDensity: d }),
+  sqlEditorHeight: 280,
+  setSqlEditorHeight: (h) => set({ sqlEditorHeight: h }),
+  sqlSchemaCollapsed: true,
+  setSqlSchemaCollapsed: (v) => set({ sqlSchemaCollapsed: v }),
 }))

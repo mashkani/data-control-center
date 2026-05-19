@@ -1,0 +1,226 @@
+import { useMemo } from 'react'
+import { Settings2 } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Tooltip } from '@/components/ui/tooltip'
+import { api } from '@/api/client'
+import { saveAskModel, type AskScope } from '@/features/ask/askComposerState'
+import type { AskOptionsFocus } from '@/features/ask/askComposerState'
+import { cn } from '@/lib/utils'
+
+function truncateName(name: string, max = 32): string {
+  if (name.length <= max) return name
+  return `${name.slice(0, max - 1)}…`
+}
+
+function formatModelSize(size: number | null | undefined): string | null {
+  if (size == null || size <= 0) return null
+  const gb = size / 1024 ** 3
+  if (gb >= 0.1) return `${gb.toFixed(1)} GB`
+  const mb = size / 1024 ** 2
+  return `${mb.toFixed(0)} MB`
+}
+
+export function AskOptionsPopover({
+  open,
+  onOpenChange,
+  focusSection,
+  busy,
+  maxRows,
+  onMaxRowsChange,
+  scope,
+  onScopeChange,
+  onSelectedModelChange,
+  effectiveSelectedModel,
+  allIds,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  focusSection?: AskOptionsFocus | null
+  busy: boolean
+  maxRows: number
+  onMaxRowsChange: (n: number) => void
+  scope: AskScope
+  onScopeChange: (s: AskScope) => void
+  selectedModel: string
+  onSelectedModelChange: (model: string) => void
+  effectiveSelectedModel: string
+  allIds: string[]
+}) {
+  const { data: datasets = [] } = useQuery({ queryKey: ['datasets'], queryFn: api.listDatasets })
+  const { data: llmModels } = useQuery({
+    queryKey: ['llm', 'models'],
+    queryFn: api.listLlmModels,
+    staleTime: 30_000,
+  })
+
+  const modelOptions = useMemo(() => {
+    if (!llmModels) return []
+    const names = [llmModels.default_model, ...llmModels.models.map((m) => m.name)]
+    return [...new Set(names.filter(Boolean))]
+  }, [llmModels])
+
+  const modelMeta = useMemo(() => {
+    const map = new Map<string, { size: number | null | undefined }>()
+    for (const m of llmModels?.models ?? []) {
+      map.set(m.name, { size: m.size })
+    }
+    return map
+  }, [llmModels])
+
+  const allChecked = scope === 'all'
+
+  const isDatasetChecked = (id: string) => scope === 'all' || (scope instanceof Set && scope.has(id))
+
+  const setAllDatasets = (checked: boolean) => {
+    onScopeChange(checked ? 'all' : new Set(allIds))
+  }
+
+  const toggleDataset = (id: string) => {
+    onScopeChange((() => {
+      if (scope === 'all') {
+        const next = new Set(allIds)
+        next.delete(id)
+        return next
+      }
+      const next = new Set(scope)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      if (next.size === 0 || next.size === allIds.length) return 'all'
+      return next
+    })())
+  }
+
+  return (
+    <Popover open={open} onOpenChange={onOpenChange}>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="outline" size="sm" className="h-7 gap-1 text-xs">
+          <Settings2 className="h-3.5 w-3.5" />
+          Options
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-80 space-y-4 p-3">
+        <section
+          className={cn(focusSection === 'model' && 'rounded-md ring-1 ring-border-accent')}
+          data-focus={focusSection === 'model' ? 'true' : undefined}
+        >
+          <div className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-fg-muted">Model</div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 w-full justify-between font-normal"
+                disabled={busy || !llmModels}
+                aria-label="Ollama model"
+              >
+                <span className="truncate">{effectiveSelectedModel || 'Loading models…'}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="max-h-64 w-[var(--radix-dropdown-menu-trigger-width)] overflow-y-auto">
+              <DropdownMenuRadioGroup
+                value={effectiveSelectedModel || ''}
+                onValueChange={(v) => {
+                  onSelectedModelChange(v)
+                  saveAskModel(v)
+                }}
+              >
+                {modelOptions.length ? (
+                  modelOptions.map((name) => {
+                    const sizeLabel = formatModelSize(modelMeta.get(name)?.size)
+                    return (
+                      <DropdownMenuRadioItem key={name} value={name}>
+                        <span className="truncate">{name}</span>
+                        {sizeLabel ? (
+                          <span className="ml-auto pl-2 text-[10px] text-fg-muted">{sizeLabel}</span>
+                        ) : null}
+                      </DropdownMenuRadioItem>
+                    )
+                  })
+                ) : (
+                  <DropdownMenuRadioItem value={llmModels?.default_model ?? ''} disabled>
+                    {llmModels?.default_model ?? 'No models'}
+                  </DropdownMenuRadioItem>
+                )}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </section>
+
+        <section
+          className={cn(focusSection === 'rows' && 'rounded-md ring-1 ring-border-accent')}
+          data-focus={focusSection === 'rows' ? 'true' : undefined}
+        >
+          <Tooltip
+            content="Max rows for the generated SQL preview (bounded by the server)."
+            className="max-w-xs text-xs"
+          >
+            <label htmlFor="dcc-ask-max-rows" className="mb-1.5 block text-[10px] font-medium uppercase tracking-wider text-fg-muted">
+              Max rows in preview
+            </label>
+          </Tooltip>
+          <Input
+            id="dcc-ask-max-rows"
+            type="number"
+            value={maxRows}
+            onChange={(e) => onMaxRowsChange(Number(e.target.value) || 0)}
+            className="h-8"
+          />
+        </section>
+
+        {datasets.length > 0 ? (
+          <section
+            className={cn(focusSection === 'scope' && 'rounded-md ring-1 ring-border-accent')}
+            data-focus={focusSection === 'scope' ? 'true' : undefined}
+          >
+            <div className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-fg-muted">Dataset scope</div>
+            <label className="mb-2 flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 hover:bg-white/5">
+              <input
+                type="checkbox"
+                checked={allChecked}
+                onChange={(e) => setAllDatasets(e.target.checked)}
+                className="rounded border-border-default"
+              />
+              <span className="text-sm">All datasets</span>
+            </label>
+            <ul className="max-h-40 space-y-1 overflow-y-auto">
+              {datasets.map((d) => (
+                <li key={d.dataset_id}>
+                  <label
+                    className={cn(
+                      'flex cursor-pointer items-start gap-2 rounded-md px-1 py-1 hover:bg-white/5',
+                      !isDatasetChecked(d.dataset_id) && !allChecked && 'opacity-70',
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isDatasetChecked(d.dataset_id)}
+                      onChange={() => toggleDataset(d.dataset_id)}
+                      className="mt-0.5 rounded border-border-default"
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm" title={d.name}>
+                        {truncateName(d.name)}
+                      </span>
+                      <span className="block truncate font-mono text-[10px] text-fg-muted">{d.dataset_id}</span>
+                    </span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+      </PopoverContent>
+    </Popover>
+  )
+}
