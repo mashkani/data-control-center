@@ -29,6 +29,7 @@ export function Tabs({
 export function TabsList({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
+      role="tablist"
       className={cn(
         'inline-flex h-10 items-center gap-1 rounded-lg border border-border-default bg-surface-1/80 p-1',
         className,
@@ -53,10 +54,13 @@ export function TabsTrigger({
   return (
     <button
       type="button"
+      role="tab"
       onClick={() => ctx.onValueChange(value)}
+      aria-selected={active}
       className={cn(
-        'rounded-md px-3 py-1.5 text-sm transition',
-        active ? 'bg-surface-2 text-fg shadow-sm' : 'text-fg-muted hover:text-fg',
+        'rounded-md px-3 py-1.5 text-sm transition-[color,background-color,box-shadow] duration-150 ease-out',
+        'motion-reduce:transition-none',
+        active ? 'bg-surface-2 text-fg shadow-sm ring-1 ring-white/10' : 'text-fg-muted hover:bg-white/5 hover:text-fg',
         className,
       )}
     >
@@ -82,7 +86,11 @@ export function TabsContent({
       role="tabpanel"
       hidden={!active}
       aria-hidden={!active}
-      className={cn('mt-4', !active && 'hidden', className)}
+      className={cn(
+        'mt-4 transition-opacity duration-150 ease-out motion-reduce:transition-none',
+        active ? 'opacity-100' : 'hidden opacity-0',
+        className,
+      )}
     >
       {children}
     </div>

@@ -271,15 +271,28 @@ export function TopBar() {
             end={end}
             className={({ isActive }) =>
               cn(
-                'inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs transition sm:text-sm',
-                isActive ? 'bg-white/12 text-white shadow-sm' : 'text-fg-muted hover:bg-white/5 hover:text-fg',
+                'relative inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs',
+                'transition-[color,background-color,box-shadow,transform] duration-150 ease-out',
+                'motion-reduce:transition-none',
+                isActive
+                  ? 'bg-white/12 text-white shadow-sm ring-1 ring-white/10'
+                  : 'text-fg-muted hover:bg-white/5 hover:text-fg active:scale-[0.98]',
               )
             }
           >
             {({ isActive }) => (
               <>
-                <Icon className="h-3.5 w-3.5 opacity-80" aria-hidden />
+                <Icon
+                  className={cn('h-3.5 w-3.5 transition-opacity duration-150', isActive ? 'opacity-100' : 'opacity-70')}
+                  aria-hidden
+                />
                 <span className={cn(isActive && 'font-medium')}>{label}</span>
+                {isActive ? (
+                  <span
+                    className="pointer-events-none absolute inset-x-2 -bottom-px h-px rounded-full bg-[hsl(var(--accent))]/80 motion-reduce:hidden"
+                    aria-hidden
+                  />
+                ) : null}
               </>
             )}
           </NavLink>

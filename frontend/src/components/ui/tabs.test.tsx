@@ -22,7 +22,10 @@ describe('Tabs', () => {
     }
     render(<Shell />)
     expect(screen.getByText('panel-a')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'B' }))
+    expect(screen.getByRole('tab', { name: 'A' })).toHaveAttribute('aria-selected', 'true')
+    await user.click(screen.getByRole('tab', { name: 'B' }))
     expect(screen.getByText('panel-b')).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'B' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tab', { name: 'A' })).toHaveAttribute('aria-selected', 'false')
   })
 })

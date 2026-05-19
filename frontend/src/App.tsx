@@ -16,6 +16,8 @@ import { SamplesPage } from '@/features/samples/SamplesPage'
 import { QueryPage } from '@/features/query/QueryPage'
 import { CommandPalette } from '@/features/shell/CommandPalette'
 import { ShortcutCheatsheet } from '@/features/shell/ShortcutCheatsheet'
+import { MainScrollRegion } from '@/features/shell/MainScrollRegion'
+import { RoutePageTransition } from '@/features/shell/RoutePageTransition'
 import { TopBar } from '@/features/shell/TopBar'
 import { useGlobalShortcuts } from '@/hooks/useGlobalShortcuts'
 import { UiUrlSync } from '@/hooks/UiUrlSync'
@@ -26,7 +28,7 @@ function Shell({ children }: { children: ReactNode }) {
       <DatasetSidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar />
-        <main className="min-h-0 flex-1 overflow-auto">{children}</main>
+        <MainScrollRegion>{children}</MainScrollRegion>
       </div>
     </div>
   )
@@ -94,7 +96,11 @@ function MainBody() {
     return <EmptyWorkspaceHero />
   }
 
-  return <RoutedPages />
+  return (
+    <RoutePageTransition>
+      <RoutedPages />
+    </RoutePageTransition>
+  )
 }
 
 export default function App() {

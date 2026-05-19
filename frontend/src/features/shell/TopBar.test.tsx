@@ -31,12 +31,12 @@ vi.mock('@/api/client', async (importOriginal) => {
   }
 })
 
-function wrap(ui: React.ReactElement) {
+function wrap(ui: React.ReactElement, initialEntries: string[] = ['/']) {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={initialEntries}>
       <QueryClientProvider client={qc}>
         <TooltipProvider delayDuration={280}>{ui}</TooltipProvider>
       </QueryClientProvider>
@@ -123,5 +123,12 @@ describe('TopBar', () => {
     const nav = screen.getByRole('navigation', { name: 'Primary' })
     expect(nav).not.toContainElement(refresh)
     expect(screen.queryByRole('link', { name: /Quality/i })).toBeNull()
+  })
+
+  it('marks the active primary tab with aria-current', async () => {
+    wrap(<TopBar />, ['/columns'])
+    const columns = await waitFor(() => screen.getByRole('link', { name: /Columns/i }))
+    expect(columns).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: /Samples/i })).not.toHaveAttribute('aria-current')
   })
 })

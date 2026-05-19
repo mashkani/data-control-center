@@ -70,7 +70,7 @@ describe('ColumnDetailDrawer', () => {
         <ColumnDetailDrawer open onOpenChange={vi.fn()} column={col} viewName="metrics" />
       </MemoryRouter>,
     )
-    await user.click(screen.getByRole('button', { name: 'Stats' }))
+    await user.click(screen.getByRole('tab', { name: 'Stats' }))
     expect(screen.getByText(/Unique \(full table\)/)).toBeInTheDocument()
     expect(screen.getByText('3.5')).toBeInTheDocument()
     expect(screen.getByText('mode-x')).toBeInTheDocument()
@@ -83,7 +83,7 @@ describe('ColumnDetailDrawer', () => {
         <ColumnDetailDrawer open onOpenChange={vi.fn()} column={mkColumn({ metric_scope: 'sample' })} viewName="metrics" />
       </MemoryRouter>,
     )
-    await user.click(screen.getByRole('button', { name: 'Stats' }))
+    await user.click(screen.getByRole('tab', { name: 'Stats' }))
     expect(screen.getByText(/Unique \(sample\)/)).toBeInTheDocument()
     expect(screen.getByText(/Distribution and uniqueness metrics below use the sample/)).toBeInTheDocument()
   })

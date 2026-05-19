@@ -90,6 +90,22 @@ describe('App', () => {
     vi.mocked(api.uploadDatasets).mockResolvedValue([])
   })
 
+  it('wraps routed pages in a route transition container', async () => {
+    renderApp()
+    await waitFor(() => expect(screen.getByTestId('route-page-transition')).toBeInTheDocument())
+  })
+
+  it('resets main scroll position when switching primary tabs', async () => {
+    const user = userEvent.setup()
+    renderApp()
+    await waitFor(() => expect(useUiStore.getState().activeDatasetId).toBe('ds_001'))
+    const main = screen.getByTestId('main-scroll-region')
+    main.scrollTop = 200
+    await user.click(screen.getByRole('link', { name: /SQL/i }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Run query' })).toBeInTheDocument())
+    expect(main.scrollTop).toBe(0)
+  })
+
   it('auto-selects first dataset and navigates', async () => {
     const user = userEvent.setup()
     renderApp()
