@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 
 export type ColumnQualityFilter = 'all' | 'has_flags' | 'critical_only'
+export type ColumnsDensity = 'compact' | 'comfortable'
 
 type UiState = {
   activeDatasetId: string | null
@@ -36,6 +37,8 @@ type UiState = {
   columnsTableHidden: Record<string, string[]>
   toggleColumnTableVisibility: (datasetId: string, columnId: string) => void
   setColumnsTableHidden: (datasetId: string, ids: string[]) => void
+  columnsDensity: ColumnsDensity
+  setColumnsDensity: (d: ColumnsDensity) => void
 }
 
 export const useUiStore = create<UiState>((set, get) => ({
@@ -89,4 +92,6 @@ export const useUiStore = create<UiState>((set, get) => ({
     set((s) => ({
       columnsTableHidden: { ...s.columnsTableHidden, [datasetId]: ids },
     })),
+  columnsDensity: 'comfortable',
+  setColumnsDensity: (d) => set({ columnsDensity: d }),
 }))

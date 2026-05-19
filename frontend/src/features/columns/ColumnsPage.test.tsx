@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ColumnsPage } from '@/features/columns/ColumnsPage'
 import { useUiStore } from '@/store/uiStore'
 import { mkColumn, mkProfile } from '@/test/profileFixtures'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 vi.mock('echarts', () => ({
   init: vi.fn(() => ({
@@ -29,14 +30,22 @@ function wrap(ui: React.ReactElement) {
   })
   return render(
     <MemoryRouter>
-      <QueryClientProvider client={qc}>{ui}</QueryClientProvider>
+      <QueryClientProvider client={qc}>
+        <TooltipProvider delayDuration={0}>{ui}</TooltipProvider>
+      </QueryClientProvider>
     </MemoryRouter>,
   )
 }
 
 describe('ColumnsPage', () => {
   beforeEach(() => {
-    useUiStore.setState({ columnsTableHidden: {} })
+    useUiStore.setState({
+      columnsTableHidden: {},
+      columnSearch: '',
+      semanticFilter: 'all',
+      columnQualityFilter: 'all',
+      columnsDensity: 'comfortable',
+    })
     h.listDatasets.mockResolvedValue([
       {
         dataset_id: 'ds_1',
@@ -52,7 +61,7 @@ describe('ColumnsPage', () => {
     h.fetchDatasetProfile.mockResolvedValue(
       mkProfile({
         column_profiles: [
-          mkColumn({ name: 'alpha', semantic_type: 'numeric' }),
+          mkColumn({ name: 'alpha', semantic_type: 'numeric', quality_flags: [] }),
           mkColumn({
             name: 'beta',
             semantic_type: 'text',
@@ -66,6 +75,7 @@ describe('ColumnsPage', () => {
             median_value: null,
             p25_value: null,
             p75_value: null,
+            quality_flags: [],
           }),
         ],
       }),
@@ -91,15 +101,20 @@ describe('ColumnsPage', () => {
     await waitFor(() => expect(screen.getByText('e1')).toBeInTheDocument())
   })
 
-  it('shows unique counts with percent and EDA summary', async () => {
+  it('shows unique counts with percent and EDA summary tooltip', async () => {
+    const user = userEvent.setup()
     useUiStore.setState({ activeDatasetId: 'ds_1' })
     wrap(<ColumnsPage />)
     await waitFor(() => expect(screen.getByRole('table')).toBeInTheDocument())
     expect(screen.getAllByText(/100\.00%/).length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByText(/EDA stats use all 10 rows/)).toBeInTheDocument()
+    await user.hover(screen.getByRole('button', { name: 'EDA sample details' }))
+    await waitFor(() =>
+      expect(screen.getAllByText(/EDA stats use all 10 rows/).length).toBeGreaterThanOrEqual(1),
+    )
   })
 
   it('labels sampled uniqueness and top-value metrics', async () => {
+    const user = userEvent.setup()
     h.fetchDatasetProfile.mockResolvedValue(
       mkProfile({
         rows: 5_000,
@@ -119,7 +134,8 @@ describe('ColumnsPage', () => {
     wrap(<ColumnsPage />)
     await waitFor(() => expect(screen.getByRole('table')).toBeInTheDocument())
     expect(screen.getAllByText('sample').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByText(/first 2,000 rows/)).toBeInTheDocument()
+    await user.hover(screen.getByRole('button', { name: 'EDA sample details' }))
+    await waitFor(() => expect(screen.getAllByText(/first 2,000 rows/).length).toBeGreaterThanOrEqual(1))
   })
 
   it('shows Role badges from dataset profile structure metadata', async () => {
@@ -167,16 +183,78 @@ describe('ColumnsPage', () => {
     expect(within(notesRow).queryByText('measure')).toBeNull()
   })
 
+  it('hides Role column when no roles exist in dataset', async () => {
+    h.fetchDatasetProfile.mockResolvedValue(
+      mkProfile({
+        primary_grain_key_columns: [],
+        entity_id_columns: [],
+        temporal_columns: [],
+        measure_candidates: [],
+        main_numeric_measures: [],
+        primary_temporal_column: null,
+        column_profiles: [mkColumn({ name: 'plain', semantic_type: 'text', quality_flags: [] })],
+      }),
+    )
+    useUiStore.setState({ activeDatasetId: 'ds_1' })
+    wrap(<ColumnsPage />)
+    await waitFor(() => expect(screen.getByRole('table')).toBeInTheDocument())
+    expect(screen.queryByRole('columnheader', { name: /^Role/ })).toBeNull()
+  })
+
+  it('hides Top column when no top values exist in dataset', async () => {
+    h.fetchDatasetProfile.mockResolvedValue(
+      mkProfile({
+        column_profiles: [
+          mkColumn({ name: 'alpha', top_value: null, top_count: null, top_pct: null, quality_flags: [] }),
+        ],
+      }),
+    )
+    useUiStore.setState({ activeDatasetId: 'ds_1' })
+    wrap(<ColumnsPage />)
+    await waitFor(() => expect(screen.getByRole('table')).toBeInTheDocument())
+    expect(screen.queryByRole('columnheader', { name: /^Top/ })).toBeNull()
+  })
+
   it('truncates long column names but keeps full title', async () => {
     const long = 'world_cup_squad_tournament_year_extra_suffix_for_test'
     h.fetchDatasetProfile.mockResolvedValue(
       mkProfile({
-        column_profiles: [mkColumn({ name: long, semantic_type: 'text' })],
+        column_profiles: [mkColumn({ name: long, semantic_type: 'text', quality_flags: [] })],
       }),
     )
     useUiStore.setState({ activeDatasetId: 'ds_1' })
     wrap(<ColumnsPage />)
     await waitFor(() => expect(screen.getByTitle(long)).toBeInTheDocument())
+  })
+
+  it('shows physical type under column name and no separate Type header', async () => {
+    useUiStore.setState({ activeDatasetId: 'ds_1' })
+    wrap(<ColumnsPage />)
+    await waitFor(() => expect(screen.getByRole('table')).toBeInTheDocument())
+    expect(screen.getAllByText('Int64').length).toBeGreaterThanOrEqual(1)
+    expect(screen.queryByRole('columnheader', { name: /^Type/ })).toBeNull()
+  })
+
+  it('shows distribution stats for numeric columns', async () => {
+    useUiStore.setState({ activeDatasetId: 'ds_1' })
+    wrap(<ColumnsPage />)
+    await waitFor(() => expect(screen.getByRole('table')).toBeInTheDocument())
+    expect(screen.getByRole('columnheader', { name: /^Distribution/ })).toBeInTheDocument()
+    expect(screen.getAllByText(/μ/).length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText(/σ/).length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('tints rows with critical quality flags', async () => {
+    h.fetchDatasetProfile.mockResolvedValue(
+      mkProfile({
+        column_profiles: [mkColumn({ name: 'flagged', quality_flags: ['high_missingness'] })],
+      }),
+    )
+    useUiStore.setState({ activeDatasetId: 'ds_1' })
+    wrap(<ColumnsPage />)
+    await waitFor(() => expect(screen.getByRole('table')).toBeInTheDocument())
+    const row = screen.getByText('flagged').closest('tr')
+    expect(row).toHaveAttribute('data-severity', 'critical')
   })
 
   it('filters sorts and opens drawer', async () => {
@@ -190,10 +268,12 @@ describe('ColumnsPage', () => {
     expect(screen.queryByText('beta')).toBeNull()
 
     await user.clear(search)
-    await user.click(screen.getByRole('button', { name: 'Text' }))
+    await user.click(screen.getByRole('button', { name: /Type:/ }))
+    await user.click(screen.getByRole('menuitemradio', { name: 'Text' }))
     expect(screen.queryByText('alpha')).toBeNull()
 
-    await user.click(screen.getByRole('button', { name: 'All types' }))
+    await user.click(screen.getByRole('button', { name: /Type:/ }))
+    await user.click(screen.getByRole('menuitemradio', { name: 'All types' }))
     const grid = screen.getByRole('table')
     const sortBtn = within(grid).getByRole('button', { name: /^Column/ })
     await user.click(sortBtn)

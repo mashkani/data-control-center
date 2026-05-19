@@ -2,7 +2,7 @@ import { PageContainer } from '@/components/ui/section'
 import { TableSkeleton } from '@/components/ui/skeleton'
 import { QueryErrorBanner } from '@/components/ui/query-error-banner'
 import { ColumnDetailDrawer } from '@/features/columns/ColumnDetailDrawer'
-import { ColumnsFilters } from '@/features/columns/ColumnsFilters'
+import { ColumnsToolbar } from '@/features/columns/ColumnsToolbar'
 import { ColumnsTable } from '@/features/columns/ColumnsTable'
 import { useColumnsTable } from '@/features/columns/useColumnsTable'
 
@@ -19,6 +19,8 @@ export function ColumnsPage() {
     setDrawerOpen,
     hiddenCols,
     toggleColVis,
+    columnsDensity,
+    setColumnsDensity,
     q,
     activeViewName,
     table,
@@ -28,6 +30,7 @@ export function ColumnsPage() {
     sampleRows,
     fullRows,
     summaryParts,
+    clearAllFilters,
     data,
   } = useColumnsTable()
 
@@ -57,7 +60,7 @@ export function ColumnsPage() {
 
   return (
     <PageContainer>
-      <ColumnsFilters
+      <ColumnsToolbar
         activeId={activeId}
         columnSearch={columnSearch}
         setColumnSearch={setColumnSearch}
@@ -67,24 +70,22 @@ export function ColumnsPage() {
         setColumnQualityFilter={setColumnQualityFilter}
         hiddenCols={hiddenCols}
         toggleColVis={toggleColVis}
+        columnsDensity={columnsDensity}
+        setColumnsDensity={setColumnsDensity}
+        filteredCount={data.length}
+        totalCols={totalCols}
+        sampleRows={sampleRows}
+        fullRows={fullRows}
+        summaryParts={summaryParts}
+        clearAllFilters={clearAllFilters}
       />
-
-      <p className="mt-3 text-xs leading-relaxed text-[hsl(var(--fg-muted))]">
-        Showing <span className="tabular-nums text-fg">{data.length}</span> of{' '}
-        <span className="tabular-nums text-fg">{totalCols}</span> columns
-        {summaryParts.length ? ` · ${summaryParts.join(' · ')}` : ''}.{' '}
-        {sampleRows != null && fullRows != null && sampleRows < fullRows
-          ? `EDA stats use the first ${sampleRows.toLocaleString()} rows (sample; full table has ${fullRows.toLocaleString()} rows). Uniqueness and distributions follow this sample.`
-          : sampleRows != null && fullRows != null && sampleRows === fullRows
-            ? `EDA stats use all ${fullRows.toLocaleString()} rows in this table.`
-            : 'EDA stats follow the profiler sample window for large datasets.'}
-      </p>
 
       <ColumnsTable
         activeId={activeId}
         table={table}
         setSelectedColumn={setSelectedColumn}
         setDrawerOpen={setDrawerOpen}
+        density={columnsDensity}
       />
 
       <ColumnDetailDrawer

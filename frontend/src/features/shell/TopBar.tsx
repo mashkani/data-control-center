@@ -14,7 +14,7 @@ import {
   Terminal,
   XCircle,
 } from 'lucide-react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/api/client'
 import { useDatasetProfile } from '@/hooks/useDatasetProfile'
@@ -34,8 +34,26 @@ const NAV: Array<{ to: string; label: string; icon: LucideIcon; end?: boolean }>
   { to: '/sql', label: 'SQL', icon: Terminal },
 ]
 
-function QualityMicroBar({ score }: { score: number | null | undefined }) {
-  if (score == null) return <span className="text-xs text-fg-muted">-</span>
+function QualityBar({
+  score,
+  onClick,
+}: {
+  score: number | null | undefined
+  onClick?: () => void
+}) {
+  if (score == null) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className="inline-flex items-center gap-2 rounded-md px-1.5 py-0.5 text-xs text-fg-muted transition hover:bg-white/5"
+        aria-label="View quality overview"
+      >
+        <span className="text-[10px] font-medium uppercase tracking-wide text-fg-muted">Quality</span>
+        <span>-</span>
+      </button>
+    )
+  }
   const sev = qualityScoreSeverity(score)
   const pct = Math.min(100, Math.max(0, score))
   const color =
@@ -45,17 +63,139 @@ function QualityMicroBar({ score }: { score: number | null | undefined }) {
         ? 'bg-[hsl(var(--severity-warning))]'
         : 'bg-[hsl(var(--severity-ok))]'
   return (
-    <div className="flex items-center gap-2">
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center gap-2 rounded-md px-1.5 py-0.5 transition hover:bg-white/5"
+      aria-label={`Quality score ${score}. View quality overview.`}
+      data-testid="quality-bar"
+    >
+      <span className="text-[10px] font-medium uppercase tracking-wide text-fg-muted">Quality</span>
       <span className="tabular-nums text-sm font-semibold text-fg">{score}</span>
       <div className="h-1.5 w-16 overflow-hidden rounded-full bg-white/10">
         <div className={cn('h-full rounded-full transition-all', color)} style={{ width: `${pct}%` }} />
       </div>
+    </button>
+  )
+}
+
+function HeaderIdentity({
+  name,
+  rows,
+  cols,
+  sizeBytes,
+  format,
+  updated,
+  qScore,
+  onQualityClick,
+}: {
+  name: string | null | undefined
+  rows: number | null
+  cols: number | null
+  sizeBytes: number | null
+  format: string
+  updated: number | undefined
+  qScore: number | null | undefined
+  onQualityClick: () => void
+}) {
+  return (
+    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+      <h1 className="min-w-0 truncate text-sm font-semibold leading-tight text-fg sm:text-base" title={name ?? ''}>
+        {name}
+      </h1>
+      <Badge variant="default" className="shrink-0 font-normal">
+        {formatDatasetFormat(format)}
+      </Badge>
+      <span aria-hidden className="hidden text-white/25 sm:inline">
+        ·
+      </span>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-fg-muted sm:text-xs">
+        <span className="tabular-nums whitespace-nowrap">{formatCount(rows)} rows</span>
+        <span aria-hidden className="text-white/25">
+          ·
+        </span>
+        <span className="tabular-nums whitespace-nowrap">{formatCount(cols)} cols</span>
+        <span aria-hidden className="text-white/25">
+          ·
+        </span>
+        <span className="tabular-nums whitespace-nowrap">{formatBytes(sizeBytes)}</span>
+        {updated ? (
+          <>
+            <span aria-hidden className="hidden text-white/25 sm:inline">
+              ·
+            </span>
+            <span className="hidden whitespace-nowrap sm:inline">{formatRelativeTime(updated)}</span>
+          </>
+        ) : null}
+      </div>
+      <span aria-hidden className="hidden text-white/25 md:inline">
+        ·
+      </span>
+      <QualityBar score={qScore} onClick={onQualityClick} />
+    </div>
+  )
+}
+
+function HeaderActions({
+  runningRefresh,
+  refreshDisabled,
+  onSearch,
+  onHelp,
+  onRefreshOrCancel,
+}: {
+  runningRefresh: boolean
+  refreshDisabled: boolean
+  onSearch: () => void
+  onHelp: () => void
+  onRefreshOrCancel: () => void
+}) {
+  return (
+    <div className="flex shrink-0 flex-wrap items-center justify-end gap-1 self-start pt-0.5 sm:gap-2">
+      <Tooltip content="Command palette (Cmd+K)">
+        <Button type="button" variant="outline" size="sm" className="gap-1" onClick={onSearch}>
+          <Search className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Search</span>
+          <kbd className="ml-1 hidden rounded border border-border-default px-1 font-mono text-[10px] text-fg-muted sm:inline">
+            Cmd+K
+          </kbd>
+        </Button>
+      </Tooltip>
+      <Button
+        type="button"
+        variant={runningRefresh ? 'default' : 'outline'}
+        size="sm"
+        className="gap-1"
+        disabled={refreshDisabled && !runningRefresh}
+        aria-label={runningRefresh ? 'Cancel refresh' : 'Refresh profile'}
+        onClick={onRefreshOrCancel}
+      >
+        {runningRefresh ? (
+          <>
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <XCircle className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Cancel refresh</span>
+            <span className="sm:hidden">Cancel</span>
+          </>
+        ) : (
+          <>
+            <RefreshCw className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Refresh profile</span>
+            <span className="sm:hidden">Refresh</span>
+          </>
+        )}
+      </Button>
+      <Tooltip content="Shortcuts (?)">
+        <Button type="button" variant="ghost" size="icon" aria-label="Keyboard shortcuts" onClick={onHelp}>
+          <HelpCircle className="h-4 w-4" />
+        </Button>
+      </Tooltip>
     </div>
   )
 }
 
 export function TopBar() {
   const location = useLocation()
+  const navigate = useNavigate()
   const activeId = useUiStore((s) => s.activeDatasetId)
   const setPalette = useUiStore((s) => s.setCommandPaletteOpen)
   const setShortcuts = useUiStore((s) => s.setShortcutSheetOpen)
@@ -79,6 +219,10 @@ export function TopBar() {
 
   const onRefresh = profileQ.refresh
   const onCancelRefresh = profileQ.cancelRefresh
+
+  const goQuality = () => {
+    navigate({ pathname: '/quality', search: location.search })
+  }
 
   return (
     <header className="shrink-0 border-b border-border-default bg-[hsl(var(--surface-1))]/60 backdrop-blur-md">
@@ -106,73 +250,33 @@ export function TopBar() {
           </Button>
         </div>
 
-        <div className="min-w-0 flex-1 space-y-1">
-          <div className="truncate text-[10px] font-semibold uppercase tracking-wider text-fg-muted sm:text-xs">
-            Data Control Center
-          </div>
-          {activeId ? (
-            <>
-              <h1 className="truncate text-sm font-semibold leading-tight text-fg sm:text-base" title={name ?? ''}>
-                {name}
-              </h1>
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-fg-muted sm:text-xs">
-                <span className="tabular-nums whitespace-nowrap">{formatCount(rows)} rows</span>
-                <span aria-hidden className="text-white/25">
-                  ·
-                </span>
-                <span className="tabular-nums whitespace-nowrap">{formatCount(cols)} cols</span>
-                <span aria-hidden className="text-white/25">
-                  ·
-                </span>
-                <span className="tabular-nums whitespace-nowrap">{formatBytes(sizeBytes)}</span>
-                <Badge variant="default" className="shrink-0 font-normal">
-                  {formatDatasetFormat(format)}
-                </Badge>
-                {updated ? (
-                  <>
-                    <span aria-hidden className="hidden text-white/25 sm:inline">
-                      ·
-                    </span>
-                    <span className="hidden whitespace-nowrap sm:inline">{formatRelativeTime(updated)}</span>
-                  </>
-                ) : null}
-                <span className="flex w-full basis-full items-center gap-2 pt-0.5 sm:w-auto sm:basis-auto sm:pt-0 md:hidden">
-                  <span className="text-[10px] font-medium uppercase tracking-wide text-fg-muted">Quality</span>
-                  <QualityMicroBar score={qScore} />
-                </span>
-                <span className="hidden items-center gap-2 md:flex">
-                  <span className="text-[10px] font-medium uppercase tracking-wide text-fg-muted">Quality</span>
-                  <QualityMicroBar score={qScore} />
-                </span>
-              </div>
-            </>
-          ) : (
+        {activeId ? (
+          <HeaderIdentity
+            name={name}
+            rows={rows}
+            cols={cols}
+            sizeBytes={sizeBytes}
+            format={format}
+            updated={updated}
+            qScore={qScore}
+            onQualityClick={goQuality}
+          />
+        ) : (
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="truncate text-[10px] font-semibold uppercase tracking-wider text-fg-muted sm:text-xs">
+              Data Control Center
+            </div>
             <p className="text-xs text-fg-muted">Select a dataset from the sidebar to begin.</p>
-          )}
-        </div>
+          </div>
+        )}
 
-        <div className="flex shrink-0 flex-col items-end gap-1 self-start pt-0.5 sm:flex-row sm:items-center">
-          <Tooltip content="Command palette (Cmd+K)">
-            <Button type="button" variant="outline" size="sm" className="gap-1" onClick={() => setPalette(true)}>
-              <Search className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Search</span>
-              <kbd className="ml-1 hidden rounded border border-border-default px-1 font-mono text-[10px] text-fg-muted sm:inline">
-                Cmd+K
-              </kbd>
-            </Button>
-          </Tooltip>
-          <Tooltip content="Shortcuts (?)">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label="Keyboard shortcuts"
-              onClick={() => setShortcuts(true)}
-            >
-              <HelpCircle className="h-4 w-4" />
-            </Button>
-          </Tooltip>
-        </div>
+        <HeaderActions
+          runningRefresh={runningRefresh}
+          refreshDisabled={!activeId || profileQ.isPendingProfile}
+          onSearch={() => setPalette(true)}
+          onHelp={() => setShortcuts(true)}
+          onRefreshOrCancel={() => (runningRefresh ? onCancelRefresh() : onRefresh())}
+        />
       </div>
 
       <nav
@@ -199,36 +303,6 @@ export function TopBar() {
             )}
           </NavLink>
         ))}
-        <div className="flex w-full min-w-[12rem] flex-1 flex-wrap items-center justify-end gap-2 sm:w-auto">
-          {runningRefresh ? (
-            <Badge variant="default" className="gap-1">
-              <Loader2 className="h-3 w-3 animate-spin" /> Profile refresh running
-            </Badge>
-          ) : null}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="gap-1"
-            disabled={!activeId || profileQ.isPendingProfile || runningRefresh}
-            onClick={() => onRefresh()}
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Refresh profile</span>
-            <span className="sm:hidden">Refresh</span>
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="gap-1"
-            disabled={!runningRefresh}
-            onClick={() => onCancelRefresh()}
-          >
-            <XCircle className="h-3.5 w-3.5" />
-            Cancel
-          </Button>
-        </div>
       </nav>
     </header>
   )

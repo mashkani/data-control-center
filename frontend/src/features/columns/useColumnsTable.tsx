@@ -10,7 +10,6 @@ import { api } from '@/api/client'
 import { useDatasetProfile } from '@/hooks/useDatasetProfile'
 import { useUiStore } from '@/store/uiStore'
 import { formatCount, formatEdaNumericString, formatPercent } from '@/lib/format'
-import { Badge } from '@/components/ui/badge'
 import {
   buildColumnRoleMap,
   metricScopeLabel,
@@ -18,7 +17,8 @@ import {
   sortOptionalNumber,
 } from '@/features/columns/columnRoleUtils'
 import { colHelper } from '@/features/columns/columnsTableConstants'
-import { NullBar, TypeIcon } from '@/features/columns/ColumnsTableCells'
+import { DistributionCell, NullBar, TypeIcon } from '@/features/columns/ColumnsTableCells'
+import { Badge } from '@/components/ui/badge'
 
 const EMPTY_HIDDEN: string[] = []
 
@@ -37,6 +37,8 @@ export function useColumnsTable() {
   const hiddenMap = useUiStore((s) => s.columnsTableHidden)
   const hiddenCols = activeId ? (hiddenMap[activeId] ?? EMPTY_HIDDEN) : EMPTY_HIDDEN
   const toggleColVis = useUiStore((s) => s.toggleColumnTableVisibility)
+  const columnsDensity = useUiStore((s) => s.columnsDensity)
+  const setColumnsDensity = useUiStore((s) => s.setColumnsDensity)
 
   const [sorting, setSorting] = useState<SortingState>([{ id: 'missing', desc: true }])
 
@@ -57,36 +59,41 @@ export function useColumnsTable() {
 
   const columnRoleMap = useMemo(() => buildColumnRoleMap(q.data), [q.data])
 
+  const hasAnyRole = useMemo(() => {
+    const profiles = q.data?.column_profiles ?? []
+    for (const col of profiles) {
+      const roles = columnRoleMap.get(col.name) ?? []
+      if (roles.length) return true
+    }
+    return false
+  }, [q.data, columnRoleMap])
+
+  const hasAnyTop = useMemo(
+    () => (q.data?.column_profiles ?? []).some((r) => r.top_value != null),
+    [q.data],
+  )
+
   const allColumnDefs = useMemo(
     () => [
       colHelper.accessor('name', {
         header: 'Column',
         cell: (ctx) => {
           const name = ctx.getValue()
-          return (
-            <div className="flex min-w-0 max-w-[min(32rem,70vw)] items-center gap-2">
-              <TypeIcon sem={ctx.row.original.semantic_type} />
-              <span className="min-w-0 truncate font-mono text-sm" title={name}>
-                {name}
-              </span>
-            </div>
-          )
-        },
-      }),
-      colHelper.accessor((r) => `${r.physical_type}|${r.semantic_type}`, {
-        id: 'type_col',
-        header: 'Type',
-        enableSorting: false,
-        cell: (ctx) => {
           const r = ctx.row.original
           return (
-            <div className="flex min-w-0 max-w-[10rem] flex-col gap-0.5">
-              <span className="truncate font-mono text-xs text-fg" title={r.physical_type}>
-                {r.physical_type}
-              </span>
-              <span className="truncate text-[10px] capitalize text-[hsl(var(--fg-muted))]" title={r.semantic_type}>
-                {r.semantic_type.replaceAll('_', ' ')}
-              </span>
+            <div className="flex min-w-0 max-w-[min(32rem,70vw)] items-start gap-2">
+              <TypeIcon sem={r.semantic_type} />
+              <div className="min-w-0">
+                <span className="block min-w-0 truncate font-mono text-sm" title={name}>
+                  {name}
+                </span>
+                <span
+                  className="block truncate font-mono text-[10px] text-[hsl(var(--fg-muted))]"
+                  title={r.physical_type}
+                >
+                  {r.physical_type}
+                </span>
+              </div>
             </div>
           )
         },
@@ -104,7 +111,12 @@ export function useColumnsTable() {
               title={roles.join(', ')}
             >
               {roles.map((role) => (
-                <Badge key={role} variant="info" className="max-w-full truncate px-1.5 py-0 text-[10px] font-normal" title={role}>
+                <Badge
+                  key={role}
+                  variant="info"
+                  className="max-w-full truncate px-1.5 py-0 text-[10px] font-normal"
+                  title={role}
+                >
                   {role}
                 </Badge>
               ))}
@@ -167,67 +179,14 @@ export function useColumnsTable() {
         },
       }),
       colHelper.accessor((r) => {
-        if (r.mean_value == null || r.mean_value === '') return null
-        const n = Number(r.mean_value)
-        return Number.isFinite(n) ? n : null
-      }, {
-        id: 'mean_sort',
-        header: 'Center',
-        sortingFn: sortOptionalNumber,
-        cell: (ctx) => {
-          const r = ctx.row.original
-          const mean = r.mean_value
-          const med = r.median_value
-          if (!mean && !med) return <span className="text-[hsl(var(--fg-muted))]">—</span>
-          return (
-            <div className="max-w-[12rem] text-xs">
-              {mean ? (
-                <div className="truncate font-mono text-fg" title={`mean ${mean}`}>
-                  μ {formatEdaNumericString(mean)}
-                </div>
-              ) : null}
-              {med ? (
-                <div className="truncate font-mono text-[hsl(var(--fg-muted))]" title={`median ${med}`}>
-                  med {formatEdaNumericString(med)}
-                </div>
-              ) : null}
-            </div>
-          )
-        },
-      }),
-      colHelper.accessor((r) => {
         if (r.std_value == null || r.std_value === '') return null
         const n = Number(r.std_value)
         return Number.isFinite(n) ? n : null
       }, {
-        id: 'spread_sort',
-        header: 'Spread',
+        id: 'distribution',
+        header: 'Distribution',
         sortingFn: sortOptionalNumber,
-        cell: (ctx) => {
-          const r = ctx.row.original
-          const std = r.std_value
-          const iqr =
-            r.p25_value != null && r.p75_value != null
-              ? `${formatEdaNumericString(r.p25_value)}–${formatEdaNumericString(r.p75_value)}`
-              : null
-          const iqrTitle =
-            r.p25_value != null && r.p75_value != null ? `${r.p25_value}–${r.p75_value}` : undefined
-          if (!std && !iqr) return <span className="text-[hsl(var(--fg-muted))]">—</span>
-          return (
-            <div className="max-w-[12rem] text-xs">
-              {std ? (
-                <div className="truncate font-mono text-fg" title={`std ${std}`}>
-                  σ {formatEdaNumericString(std)}
-                </div>
-              ) : null}
-              {iqr ? (
-                <div className="truncate font-mono text-[hsl(var(--fg-muted))]" title={iqrTitle ? `IQR ${iqrTitle}` : undefined}>
-                  IQR {iqr}
-                </div>
-              ) : null}
-            </div>
-          )
-        },
+        cell: (ctx) => <DistributionCell row={ctx.row.original} />,
       }),
       colHelper.accessor((r) => r.top_pct ?? null, {
         id: 'top_pct',
@@ -280,8 +239,15 @@ export function useColumnsTable() {
   )
 
   const columns = useMemo(
-    () => allColumnDefs.filter((c) => !hiddenCols.includes(String(c.id))),
-    [allColumnDefs, hiddenCols],
+    () =>
+      allColumnDefs.filter((c) => {
+        const id = String(c.id)
+        if (hiddenCols.includes(id)) return false
+        if (id === 'role_col' && !hasAnyRole) return false
+        if (id === 'top_pct' && !hasAnyTop) return false
+        return true
+      }),
+    [allColumnDefs, hiddenCols, hasAnyRole, hasAnyTop],
   )
 
   const data = useMemo(() => {
@@ -327,11 +293,20 @@ export function useColumnsTable() {
   const summaryParts = useMemo(() => {
     const bits: string[] = []
     if (columnSearch.trim()) bits.push(`name contains "${columnSearch.trim()}"`)
-    if (semanticFilter !== 'all') bits.push(`semantic: ${semanticFilter}`)
+    if (semanticFilter !== 'all') {
+      const label = semanticFilter.replaceAll('_', ' ')
+      bits.push(`type: ${label}`)
+    }
     if (columnQualityFilter === 'has_flags') bits.push('quality: has flags')
     if (columnQualityFilter === 'critical_only') bits.push('quality: critical flags')
     return bits
   }, [columnSearch, semanticFilter, columnQualityFilter])
+
+  const clearAllFilters = () => {
+    setColumnSearch('')
+    setSemanticFilter('all')
+    setColumnQualityFilter('all')
+  }
 
   return {
     activeId,
@@ -345,6 +320,8 @@ export function useColumnsTable() {
     setDrawerOpen,
     hiddenCols,
     toggleColVis,
+    columnsDensity,
+    setColumnsDensity,
     q,
     activeViewName,
     table,
@@ -354,6 +331,9 @@ export function useColumnsTable() {
     sampleRows,
     fullRows,
     summaryParts,
+    clearAllFilters,
+    hasAnyRole,
+    hasAnyTop,
     data,
   }
 }
