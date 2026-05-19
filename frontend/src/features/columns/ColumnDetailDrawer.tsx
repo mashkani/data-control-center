@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import type { ColumnProfile } from '@/api/types'
+import type { ColumnProfile, HistogramBin } from '@/api/types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Sheet } from '@/components/ui/sheet'
@@ -42,11 +42,30 @@ function formatHistogramEdge(raw: string): string {
   return formatEdaNumericString(trimmed)
 }
 
-function formatHistogramBinLabel(bin: string): string {
-  const match = bin.trim().match(/^([[()])\s*([^,]+)\s*,\s*([^\])]+)\s*([\])])$/)
-  if (!match) return bin
-  const [, leftBracket, start, end, rightBracket] = match
-  return `${leftBracket}${formatHistogramEdge(start)}, ${formatHistogramEdge(end)}${rightBracket}`
+function formatHistogramBound(value: number | null): string {
+  if (value == null) return 'inf'
+  return formatHistogramEdge(String(value))
+}
+
+function formatHistogramAxisLabel(bin: HistogramBin): string {
+  if (bin.lower_bound == null && bin.upper_bound != null) {
+    return `<= ${formatHistogramBound(bin.upper_bound)}`
+  }
+  if (bin.upper_bound == null && bin.lower_bound != null) {
+    return `> ${formatHistogramBound(bin.lower_bound)}`
+  }
+  if (bin.lower_bound != null && bin.upper_bound != null) {
+    return `${formatHistogramBound(bin.lower_bound)}-${formatHistogramBound(bin.upper_bound)}`
+  }
+  return 'All'
+}
+
+function formatHistogramInterval(bin: HistogramBin): string {
+  const leftBracket = bin.left_closed ? '[' : '('
+  const rightBracket = bin.right_closed ? ']' : ')'
+  const lower = bin.lower_bound == null ? '-inf' : formatHistogramBound(bin.lower_bound)
+  const upper = bin.upper_bound == null ? 'inf' : formatHistogramBound(bin.upper_bound)
+  return `${leftBracket}${lower}, ${upper}${rightBracket}`
 }
 
 type ChartTooltipParam = {
@@ -72,23 +91,29 @@ export function ColumnDetailDrawer({
   const hist = column?.histogram ?? []
   const hasHist = hist.length > 0
   const histBins = hist.map((x) => ({
-    raw: x.bin,
-    label: formatHistogramBinLabel(x.bin),
+    interval: formatHistogramInterval(x),
+    label: formatHistogramAxisLabel(x),
     count: x.count,
+    pctNonNull: x.pct_non_null,
   }))
 
   useDisposableEChart(
     histRef,
     distActive && hasHist,
     () => ({
-      grid: { left: 12, right: 12, top: 24, bottom: 64, containLabel: true },
+      grid: { left: 12, right: 12, top: 24, bottom: 48, containLabel: true },
       xAxis: {
         type: 'category',
         data: histBins.map((x) => x.label),
-        axisLabel: { interval: 'auto', hideOverlap: true, margin: 12 },
+        axisLabel: { interval: 0, hideOverlap: false, margin: 12 },
       },
-      yAxis: { type: 'value' },
-      series: [{ type: 'bar', data: histBins.map((x) => x.count), barMaxWidth: 32 }],
+      yAxis: {
+        type: 'value',
+        axisLabel: {
+          formatter: (value: number) => `${value}%`,
+        },
+      },
+      series: [{ type: 'bar', data: histBins.map((x) => x.pctNonNull), barMaxWidth: 32 }],
       tooltip: {
         trigger: 'axis',
         formatter: (params: ChartTooltipParam | ChartTooltipParam[]) => {
@@ -96,11 +121,12 @@ export function ColumnDetailDrawer({
           if (!point || typeof point.dataIndex !== 'number') return ''
           const bucket = histBins[point.dataIndex]
           if (!bucket) return ''
-          return `${bucket.raw}<br/>Count: ${formatCount(bucket.count)}`
+          const scopeNote = column?.metric_scope === 'sample' ? '<br/>Scope: sample non-null rows' : ''
+          return `${bucket.interval}<br/>Percent: ${formatPercent(bucket.pctNonNull, 2)}<br/>Count: ${formatCount(bucket.count)}${scopeNote}`
         },
       },
     }),
-    [column, histBins],
+    [column?.metric_scope, histBins],
   )
 
   useDisposableEChart(

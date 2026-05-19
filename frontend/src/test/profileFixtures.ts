@@ -1,4 +1,16 @@
-import type { ColumnProfile, DatasetProfile, QualityIssue } from '@/api/types'
+import type { ColumnProfile, DatasetProfile, HistogramBin, QualityIssue } from '@/api/types'
+
+export function mkHistogramBin(overrides: Partial<HistogramBin> = {}): HistogramBin {
+  return {
+    lower_bound: 0,
+    upper_bound: 10,
+    left_closed: false,
+    right_closed: true,
+    count: 3,
+    pct_non_null: 30,
+    ...overrides,
+  }
+}
 
 export function mkProfile(overrides: Partial<DatasetProfile> = {}): DatasetProfile {
   return {
@@ -19,7 +31,7 @@ export function mkProfile(overrides: Partial<DatasetProfile> = {}): DatasetProfi
     narrative: '**Hi** there',
     likely_grain: 'One row per id.',
     main_numeric_measures: ['x'],
-    structure_version: 'v4',
+    structure_version: 'v6',
     grain_key_scope: 'full',
     temporal_columns: [{ name: 'created', kind: 'continuous_datetime', confidence: 'high' }],
     entity_id_columns: [{ name: 'id', confidence: 'high' }],

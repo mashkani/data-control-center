@@ -102,6 +102,15 @@ class TemporalKind(str, Enum):
     discrete_period = "discrete_period"
 
 
+class HistogramBin(BaseModel):
+    lower_bound: float | None = None
+    upper_bound: float | None = None
+    left_closed: bool = False
+    right_closed: bool = True
+    count: int
+    pct_non_null: float
+
+
 class ColumnProfile(BaseModel):
     name: str
     physical_type: str
@@ -124,7 +133,7 @@ class ColumnProfile(BaseModel):
     top_pct: float | None = None
     top_values: list[dict[str, Any]] = Field(default_factory=list)
     quality_flags: list[str] = Field(default_factory=list)
-    histogram: list[dict[str, Any]] | None = None
+    histogram: list[HistogramBin] | None = None
     metric_scope: MetricScope = MetricScope.full
 
 
@@ -186,7 +195,7 @@ class DatasetProfile(BaseModel):
     narrative: str = ""
     likely_grain: str | None = None
     main_numeric_measures: list[str] = Field(default_factory=list)
-    structure_version: str = "v4"
+    structure_version: str = "v6"
     grain_key_scope: MetricScope = MetricScope.full
     temporal_columns: list[TemporalColumnInfo] = Field(default_factory=list)
     entity_id_columns: list[EntityIdCandidate] = Field(default_factory=list)

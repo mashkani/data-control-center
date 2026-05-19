@@ -25,7 +25,6 @@ export const COLUMN_TOOLBAR_IDS: Array<{ id: string; label: string }> = [
   { id: 'role_col', label: 'Role' },
   { id: 'missing', label: 'Missing' },
   { id: 'unique_pct', label: 'Unique' },
-  { id: 'range_col', label: 'Range' },
   { id: 'distribution', label: 'Distribution' },
   { id: 'quality_flags', label: 'Flags' },
 ]

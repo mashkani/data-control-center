@@ -73,7 +73,7 @@ Implementation: [`app/services/registry.py`](app/services/registry.py) (`ensure_
 | **`DCC_WORKSPACE_DB_PATH`** | `.dcc_workspace.duckdb` | Metadata DB (relative to backend cwd) |
 | **`DCC_DB_READER_POOL_SIZE`** | `4` | Reader connection pool size (1–16) |
 
-Holds cached profiles (**`structure_version: "v4"`**), profile history, **`dcc_jobs`**,
+Holds cached profiles (**`structure_version: "v6"`**), profile history, **`dcc_jobs`**,
 saved SQL, and Ask tables. Implementation: [`app/services/workspace.py`](app/services/workspace.py),
 [`workspace_engine.py`](app/services/workspace_engine.py),
 [`workspace_schema.py`](app/services/workspace_schema.py),

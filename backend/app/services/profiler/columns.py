@@ -129,6 +129,16 @@ def _numeric_histogram(series: pl.Series, bins: int = 12) -> list[dict[str, Any]
     clean = series.drop_nulls()
     if clean.len() < 2:
         return None
+    is_integer_series = clean.dtype in (
+        pl.Int8,
+        pl.Int16,
+        pl.Int32,
+        pl.Int64,
+        pl.UInt8,
+        pl.UInt16,
+        pl.UInt32,
+        pl.UInt64,
+    )
     try:
         mn = float(clean.min())  # type: ignore[arg-type]
         mx = float(clean.max())  # type: ignore[arg-type]
@@ -136,16 +146,70 @@ def _numeric_histogram(series: pl.Series, bins: int = 12) -> list[dict[str, Any]
         return None
     if not math.isfinite(mn) or not math.isfinite(mx) or mn == mx:
         return None
-    # Equal-width bins via explicit break points (Polars requires a Sequence for `breaks`).
     try:
-        edges = [mn + (mx - mn) * i / bins for i in range(bins + 1)]
-        binned = clean.cut(breaks=edges)
-        counts = binned.value_counts().sort(by=binned.name)
+        if is_integer_series:
+            mn_int = int(clean.min())  # type: ignore[arg-type]
+            mx_int = int(clean.max())  # type: ignore[arg-type]
+            domain = mx_int - mn_int + 1
+            bucket_count = min(bins, domain)
+            if bucket_count <= 0:
+                return None
+            base_width = domain // bucket_count
+            remainder = domain % bucket_count
+            ranges: list[tuple[int, int]] = []
+            start = mn_int
+            for idx in range(bucket_count):
+                width = base_width + (1 if idx < remainder else 0)
+                end = start + width - 1
+                ranges.append((start, end))
+                start = end + 1
+            counts = [0] * bucket_count
+            for raw in clean.to_list():
+                iv = int(raw)
+                if iv < mn_int or iv > mx_int:
+                    continue
+                idx = 0
+                while idx < bucket_count - 1 and iv > ranges[idx][1]:
+                    idx += 1
+                counts[idx] += 1
+        else:
+            width = (mx - mn) / bins
+            if not math.isfinite(width) or width <= 0:
+                return None
+            edges = [mn + width * i for i in range(bins + 1)]
+            counts = [0] * bins
+            for raw in clean.to_list():
+                fv = float(raw)
+                if not math.isfinite(fv):
+                    continue
+                idx = 0
+                while idx < bins - 1 and fv > edges[idx + 1]:
+                    idx += 1
+                counts[idx] += 1
+        total = sum(counts)
+        if total <= 0:
+            return None
         hist = []
-        for row in counts.iter_rows(named=True):
-            bin_key = binned.name
+        for idx, count in enumerate(counts):
+            if is_integer_series:
+                lower = float(ranges[idx][0])
+                upper = float(ranges[idx][1])
+                left_closed = True
+                right_closed = True
+            else:
+                lower = None if idx == 0 else edges[idx]
+                upper = None if idx == bins - 1 else edges[idx + 1]
+                left_closed = False
+                right_closed = upper is not None
             hist.append(
-                {"bin": str(row.get(bin_key)), "count": int(row.get("count", 0))}
+                {
+                    "lower_bound": lower,
+                    "upper_bound": upper,
+                    "left_closed": left_closed,
+                    "right_closed": right_closed,
+                    "count": count,
+                    "pct_non_null": round(count / total * 100, 4),
+                }
             )
         return hist
     except Exception:

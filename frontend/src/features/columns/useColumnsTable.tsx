@@ -9,7 +9,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '@/api/client'
 import { useDatasetProfile } from '@/hooks/useDatasetProfile'
 import { useUiStore } from '@/store/uiStore'
-import { formatCount, formatEdaNumericString, formatPercent } from '@/lib/format'
+import { formatCount, formatPercent } from '@/lib/format'
 import {
   buildColumnRoleMap,
   metricScopeLabel,
@@ -149,27 +149,6 @@ export function useColumnsTable() {
                 <span className="ml-1 text-[10px] text-[hsl(var(--fg-muted))]">sample</span>
               ) : null}
             </div>
-          )
-        },
-      }),
-      colHelper.accessor((r) => `${r.min_value ?? ''}→${r.max_value ?? ''}`, {
-        id: 'range_col',
-        header: 'Range',
-        enableSorting: false,
-        cell: (ctx) => {
-          const r = ctx.row.original
-          if (r.min_value == null && r.max_value == null) {
-            return <span className="text-[hsl(var(--fg-muted))]">—</span>
-          }
-          const minShown = r.min_value != null ? formatEdaNumericString(r.min_value) : '—'
-          const maxShown = r.max_value != null ? formatEdaNumericString(r.max_value) : '—'
-          return (
-            <span
-              className="block max-w-[14rem] truncate font-mono text-xs text-fg"
-              title={`${r.min_value ?? ''} → ${r.max_value ?? ''}`}
-            >
-              {minShown} → {maxShown}
-            </span>
           )
         },
       }),

@@ -166,7 +166,81 @@ def test_numeric_histogram_equal_min_max() -> None:
 
 def test_numeric_histogram_normal() -> None:
     h = _numeric_histogram(pl.Series("x", list(range(20)), dtype=pl.Float64), bins=5)
-    assert h is not None and len(h) >= 1
+    assert h is not None and len(h) == 5
+    assert h[0] == {
+        "lower_bound": None,
+        "upper_bound": 3.8,
+        "left_closed": False,
+        "right_closed": True,
+        "count": 4,
+        "pct_non_null": 20.0,
+    }
+    assert h[-1] == {
+        "lower_bound": 15.2,
+        "upper_bound": None,
+        "left_closed": False,
+        "right_closed": False,
+        "count": 4,
+        "pct_non_null": 20.0,
+    }
+    assert sum(bin["count"] for bin in h) == 20
+    assert sum(bin["pct_non_null"] for bin in h) == pytest.approx(100.0, abs=0.001)
+
+
+def test_numeric_histogram_integer_ranges_use_whole_number_bins() -> None:
+    h = _numeric_histogram(pl.Series("x", list(range(16, 56)), dtype=pl.Int64), bins=12)
+    assert h is not None
+    assert h[0] == {
+        "lower_bound": 16.0,
+        "upper_bound": 19.0,
+        "left_closed": True,
+        "right_closed": True,
+        "count": 4,
+        "pct_non_null": 10.0,
+    }
+    assert h[1] == {
+        "lower_bound": 20.0,
+        "upper_bound": 23.0,
+        "left_closed": True,
+        "right_closed": True,
+        "count": 4,
+        "pct_non_null": 10.0,
+    }
+    assert h[-1] == {
+        "lower_bound": 53.0,
+        "upper_bound": 55.0,
+        "left_closed": True,
+        "right_closed": True,
+        "count": 3,
+        "pct_non_null": 7.5,
+    }
+    assert sum(bin["count"] for bin in h) == 40
+    assert sum(bin["pct_non_null"] for bin in h) == pytest.approx(100.0, abs=0.001)
+
+
+def test_numeric_histogram_preserves_zero_count_bins() -> None:
+    h = _numeric_histogram(pl.Series("x", [0.0, 0.0, 9.0, 9.0]), bins=4)
+    assert h is not None
+    assert [bin["count"] for bin in h] == [2, 0, 0, 2]
+    assert sum(bin["pct_non_null"] for bin in h) == pytest.approx(100.0, abs=0.001)
+
+
+def test_numeric_histogram_invalid_bin_width() -> None:
+    assert _numeric_histogram(pl.Series("x", [1.0, 2.0, 3.0]), bins=-1) is None
+
+
+def test_numeric_histogram_integer_invalid_bucket_count() -> None:
+    assert _numeric_histogram(pl.Series("x", [1, 2, 3], dtype=pl.Int64), bins=-1) is None
+
+
+def test_numeric_histogram_integer_skips_out_of_domain_values(monkeypatch: pytest.MonkeyPatch) -> None:
+    def bad_values(self, *a, **k):  # noqa: ANN001
+        return [0, 2, 9, 99]
+
+    monkeypatch.setattr(pl.Series, "to_list", bad_values)
+    h = _numeric_histogram(pl.Series("x", [0, 2, 9], dtype=pl.Int64), bins=4)
+    assert h is not None
+    assert sum(bin["count"] for bin in h) == 3
 
 
 def test_severity_order_known() -> None:
@@ -332,7 +406,7 @@ def test_build_profile_detects_discrete_temporal_and_composite_grain(tmp_path: P
         file_size_bytes=path.stat().st_size,
     )
     prof = build_profile(ds, Settings())
-    assert prof.structure_version == "v5"
+    assert prof.structure_version == "v6"
     assert prof.primary_temporal_column is not None
     assert prof.primary_temporal_column.name == "year"
     assert prof.primary_temporal_column.kind.value == "discrete_period"
@@ -366,7 +440,7 @@ def test_build_profile_finds_panel_grain_with_player_id_late_in_schema(tmp_path:
         file_size_bytes=path.stat().st_size,
     )
     prof = build_profile(ds, Settings())
-    assert prof.structure_version == "v5"
+    assert prof.structure_version == "v6"
     assert {*prof.primary_grain_key_columns} == {"playerId", "year"}
     assert any(e.name == "playerId" for e in prof.entity_id_columns)
 
@@ -634,19 +708,19 @@ def test_numeric_histogram_min_max_exception(monkeypatch: pytest.MonkeyPatch) ->
     assert _numeric_histogram(pl.Series("x", [1.0, 2.0, 3.0]), bins=3) is None
 
 
-def test_numeric_histogram_cut_exception(monkeypatch: pytest.MonkeyPatch) -> None:
-    real_drop = pl.Series.drop_nulls
+def test_numeric_histogram_to_list_exception(monkeypatch: pytest.MonkeyPatch) -> None:
+    def bad_to_list(self, *a, **k):  # noqa: ANN001
+        raise RuntimeError("to_list")
 
-    def drop_then_broken(self, *a, **k):  # noqa: ANN001
-        s = real_drop(self, *a, **k)
+    monkeypatch.setattr(pl.Series, "to_list", bad_to_list)
+    assert _numeric_histogram(pl.Series("x", [1.0, 5.0, 9.0, 13.0]), bins=4) is None
 
-        def bad_cut(*ia, **ik):  # noqa: ANN001
-            raise RuntimeError("cut")
 
-        s.cut = bad_cut  # type: ignore[method-assign]
-        return s
+def test_numeric_histogram_all_non_finite_values_after_list(monkeypatch: pytest.MonkeyPatch) -> None:
+    def bad_values(self, *a, **k):  # noqa: ANN001
+        return [float("nan"), float("inf")]
 
-    monkeypatch.setattr(pl.Series, "drop_nulls", drop_then_broken)
+    monkeypatch.setattr(pl.Series, "to_list", bad_values)
     assert _numeric_histogram(pl.Series("x", [1.0, 5.0, 9.0, 13.0]), bins=4) is None
 
 

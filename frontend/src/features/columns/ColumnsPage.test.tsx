@@ -230,13 +230,20 @@ describe('ColumnsPage', () => {
     expect(screen.queryByRole('columnheader', { name: /^Type/ })).toBeNull()
   })
 
-  it('shows distribution stats for numeric columns', async () => {
+  it('shows structured distribution stats and no separate range column for numeric columns', async () => {
     useUiStore.setState({ activeDatasetId: 'ds_1' })
     wrap(<ColumnsPage />)
     await waitFor(() => expect(screen.getByRole('table')).toBeInTheDocument())
+    expect(screen.queryByRole('columnheader', { name: /^Range/ })).toBeNull()
     expect(screen.getByRole('columnheader', { name: /^Distribution/ })).toBeInTheDocument()
-    expect(screen.getAllByText(/μ/).length).toBeGreaterThanOrEqual(1)
-    expect(screen.getAllByText(/σ/).length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('range').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('IQR').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('median').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('mean').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('σ').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('0 -> 9').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('2 -> 7').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(1)
   })
 
   it('tints rows with critical quality flags', async () => {

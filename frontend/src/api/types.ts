@@ -54,6 +54,14 @@ export type QualitySeverity = 'critical' | 'warning' | 'info'
 export type MetricScope = 'full' | 'sample'
 export type StructureConfidence = 'low' | 'medium' | 'high'
 export type TemporalKind = 'continuous_datetime' | 'discrete_period'
+export type HistogramBin = {
+  lower_bound: number | null
+  upper_bound: number | null
+  left_closed: boolean
+  right_closed: boolean
+  count: number
+  pct_non_null: number
+}
 
 export type ColumnProfile = {
   name: string
@@ -77,7 +85,7 @@ export type ColumnProfile = {
   top_pct?: number | null
   top_values: Array<{ value: unknown; count: number }>
   quality_flags: string[]
-  histogram: Array<{ bin: string; count: number }> | null
+  histogram: HistogramBin[] | null
   metric_scope?: MetricScope
 }
 

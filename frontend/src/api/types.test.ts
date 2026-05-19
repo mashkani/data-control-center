@@ -75,11 +75,17 @@ describe('api types conformance', () => {
   it('ColumnProfile nested in DatasetProfile', () => {
     const col: ColumnProfile = datasetProfileFixture.column_profiles[0]!
     expect(col.semantic_type).toBe('id_like')
+    expect(col.histogram?.[0]).toMatchObject({
+      lower_bound: null,
+      upper_bound: 2,
+      count: 1,
+      pct_non_null: 50,
+    })
   })
 
   it('DatasetProfile fixture', () => {
     expectTypeOf(datasetProfileFixture).toEqualTypeOf<DatasetProfile>()
-    expect(datasetProfileFixture.structure_version).toBe('v4')
+    expect(datasetProfileFixture.structure_version).toBe('v6')
   })
 
   it('QueryRequest and QueryResult', () => {

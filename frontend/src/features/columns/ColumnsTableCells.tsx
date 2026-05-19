@@ -60,7 +60,23 @@ function toFiniteNumber(value: string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null
 }
 
-export function RangeBar({
+function hasValue(value: string | null | undefined): boolean {
+  return value != null && value !== ''
+}
+
+function formatMetricValue(value: string | null | undefined): string {
+  return formatEdaNumericString(value) || '—'
+}
+
+function formatMetricRange(
+  start: string | null | undefined,
+  end: string | null | undefined,
+): string | null {
+  if (start == null && end == null) return null
+  return `${formatMetricValue(start)} -> ${formatMetricValue(end)}`
+}
+
+function DistributionRail({
   min,
   p25,
   median,
@@ -85,7 +101,7 @@ export function RangeBar({
 
   return (
     <div className="mt-1.5">
-      <div className="relative h-1.5 w-full max-w-[120px] overflow-hidden rounded-full bg-white/10">
+      <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-white/10">
         {p25N != null && p75N != null ? (
           <div
             className="absolute top-0 h-full bg-white/20"
@@ -101,7 +117,7 @@ export function RangeBar({
           />
         ) : null}
       </div>
-      <div className="mt-0.5 flex max-w-[120px] justify-between gap-1 font-mono text-[9px] text-[hsl(var(--fg-muted))]">
+      <div className="mt-0.5 flex justify-between gap-2 font-mono text-[10px] text-[hsl(var(--fg-muted))]">
         <span className="truncate">{formatEdaNumericString(min)}</span>
         <span className="truncate">{formatEdaNumericString(max)}</span>
       </div>
@@ -110,33 +126,64 @@ export function RangeBar({
 }
 
 export function DistributionCell({ row }: { row: ColumnProfile }) {
-  const mean = row.mean_value
-  const std = row.std_value
-  const hasStats = Boolean(mean || std)
+  const range = formatMetricRange(row.min_value, row.max_value)
+  const iqr = formatMetricRange(row.p25_value, row.p75_value)
+  const metrics = [
+    hasValue(row.median_value)
+      ? { label: 'median', value: formatMetricValue(row.median_value) }
+      : null,
+    hasValue(row.mean_value)
+      ? { label: 'mean', value: formatMetricValue(row.mean_value) }
+      : null,
+    hasValue(row.std_value)
+      ? { label: 'σ', value: formatMetricValue(row.std_value) }
+      : null,
+  ].filter((metric): metric is { label: string; value: string } => metric != null)
+  const hasStats = hasValue(row.mean_value) || hasValue(row.std_value)
   const hasRange =
-    row.min_value != null ||
-    row.max_value != null ||
-    row.p25_value != null ||
-    row.p75_value != null ||
-    row.median_value != null
+    hasValue(row.min_value) ||
+    hasValue(row.max_value) ||
+    hasValue(row.p25_value) ||
+    hasValue(row.p75_value) ||
+    hasValue(row.median_value)
 
   if (!hasStats && !hasRange) {
     return <span className="text-[hsl(var(--fg-muted))]">—</span>
   }
 
   return (
-    <div className="min-w-[140px] max-w-[12rem] text-xs">
-      {hasStats ? (
-        <div
-          className="truncate font-mono text-fg"
-          title={`mean ${mean ?? '—'} · std ${std ?? '—'}`}
-        >
-          {mean ? <>μ {formatEdaNumericString(mean)}</> : null}
-          {mean && std ? <span aria-hidden> · </span> : null}
-          {std ? <>σ {formatEdaNumericString(std)}</> : null}
-        </div>
-      ) : null}
-      <RangeBar
+    <div className="min-w-[16rem] max-w-[20rem] text-xs">
+      <div className="space-y-1">
+        {range ? (
+          <div className="flex items-start gap-2">
+            <span className="min-w-[3.5rem] text-[10px] uppercase tracking-wide text-[hsl(var(--fg-muted))]">
+              range
+            </span>
+            <span className="font-mono tabular-nums text-fg">{range}</span>
+          </div>
+        ) : null}
+        {iqr ? (
+          <div className="flex items-start gap-2">
+            <span className="min-w-[3.5rem] text-[10px] uppercase tracking-wide text-[hsl(var(--fg-muted))]">
+              IQR
+            </span>
+            <span className="font-mono tabular-nums text-fg">{iqr}</span>
+          </div>
+        ) : null}
+        {metrics.length ? (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-fg">
+            {metrics.map((metric) => (
+              <span key={metric.label} className="font-mono tabular-nums">
+                <span className="mr-1 text-[10px] uppercase tracking-wide text-[hsl(var(--fg-muted))]">
+                  {metric.label}
+                </span>
+                {metric.value}
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </div>
+      <DistributionRail
         min={row.min_value}
         p25={row.p25_value}
         median={row.median_value}

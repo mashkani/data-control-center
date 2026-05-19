@@ -95,7 +95,7 @@ def test_profile_invalidates_stale_cached_structure_version(client, tmp_path):
     assert reg.status_code == 200
     did = reg.json()["dataset_id"]
     body = _wait_for_profile(client, did)
-    assert body["structure_version"] == "v5"
+    assert body["structure_version"] == "v6"
     stale = {**body, "structure_version": "v2"}
     client.app.state.workspace.profiles.save_profile_cache(did, stale)
     pr2 = client.get(f"/api/datasets/{did}/profile")
