@@ -101,6 +101,16 @@ describe('ColumnsPage', () => {
     await waitFor(() => expect(screen.getByText('e1')).toBeInTheDocument())
   })
 
+  it('keeps column headers sticky inside a scrollable table container', async () => {
+    useUiStore.setState({ activeDatasetId: 'ds_1' })
+    wrap(<ColumnsPage />)
+    await waitFor(() => expect(screen.getByRole('table')).toBeInTheDocument())
+    const thead = screen.getByRole('columnheader', { name: /^Column/ }).closest('thead')
+    expect(thead).toHaveClass('sticky', 'top-0')
+    const scrollContainer = screen.getByRole('table').parentElement
+    expect(scrollContainer).toHaveClass('overflow-auto', 'max-h-[calc(100vh-12rem)]')
+  })
+
   it('shows unique counts with percent and EDA summary tooltip', async () => {
     const user = userEvent.setup()
     useUiStore.setState({ activeDatasetId: 'ds_1' })

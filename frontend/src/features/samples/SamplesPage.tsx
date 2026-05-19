@@ -4,7 +4,7 @@ import { api } from '@/api/client'
 import { useDatasetProfile } from '@/hooks/useDatasetProfile'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { TBody, TD, TH, THead, TR } from '@/components/ui/table'
+import { Table, TBody, TD, TH, THead, TR } from '@/components/ui/table'
 import { PageContainer } from '@/components/ui/section'
 import { TableSkeleton } from '@/components/ui/skeleton'
 import { QueryErrorBanner } from '@/components/ui/query-error-banner'
@@ -132,8 +132,10 @@ export function SamplesPage() {
         </div>
       </div>
 
-      <div className="relative overflow-x-auto rounded-xl border border-border-default">
-        <table className="w-full min-w-max text-left text-sm">
+      <Table
+        className="min-w-max"
+        containerClassName="max-h-[calc(100vh-12rem)] overflow-auto rounded-xl"
+      >
           <caption className="sr-only">Sample rows</caption>
           <THead className="sticky top-0 z-10 bg-[hsl(var(--bg-1))]/95 shadow-[0_1px_0_rgba(255,255,255,0.08)] backdrop-blur">
             <TR>
@@ -182,8 +184,7 @@ export function SamplesPage() {
               )
             })}
           </TBody>
-        </table>
-      </div>
+      </Table>
     </PageContainer>
   )
 }

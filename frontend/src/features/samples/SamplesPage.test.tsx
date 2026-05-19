@@ -69,7 +69,10 @@ describe('SamplesPage', () => {
     useUiStore.setState({ activeDatasetId: 'ds_1' })
     wrap(<SamplesPage />)
     await waitFor(() => expect(screen.getByText(/\{"x":1\}/)).toBeInTheDocument())
-    expect(screen.getByRole('columnheader', { name: '#' }).closest('thead')).toHaveClass('sticky', 'top-0')
+    const thead = screen.getByRole('columnheader', { name: '#' }).closest('thead')
+    expect(thead).toHaveClass('sticky', 'top-0')
+    const scrollContainer = screen.getByRole('table').parentElement
+    expect(scrollContainer).toHaveClass('overflow-auto', 'max-h-[calc(100vh-12rem)]')
 
     await user.click(screen.getByRole('button', { name: 'Next' }))
     await waitFor(() => expect(screen.getByText(/101-150/)).toBeInTheDocument())

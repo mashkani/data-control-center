@@ -26,9 +26,9 @@ export function ColumnsTable({
     'bg-[hsl(var(--bg-1))]/95 data-[severity=critical]:bg-[hsl(var(--severity-critical))]/[0.06] data-[severity=warning]:bg-[hsl(var(--severity-warning))]/[0.05] group-hover:bg-white/[0.04]'
 
   return (
-    <Table>
+    <Table containerClassName="max-h-[calc(100vh-12rem)] overflow-auto">
       <caption className="sr-only">Columns for dataset {activeId}</caption>
-      <THead className="sticky top-0 z-10 bg-[hsl(var(--bg-1))]/95 backdrop-blur">
+      <THead className="sticky top-0 z-10 bg-[hsl(var(--bg-1))]/95 shadow-[0_1px_0_rgba(255,255,255,0.08)] backdrop-blur">
         {table.getHeaderGroups().map((hg) => (
           <TR key={hg.id}>
             {hg.headers.map((h) => {

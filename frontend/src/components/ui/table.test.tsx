@@ -22,4 +22,17 @@ describe('Table', () => {
     expect(screen.getByText('d')).toBeInTheDocument()
     expect(container.firstElementChild).toHaveClass('overflow-x-auto')
   })
+
+  it('merges containerClassName onto the wrapper', () => {
+    const { container } = render(
+      <Table containerClassName="max-h-96 overflow-auto">
+        <TBody>
+          <TR>
+            <TD>d</TD>
+          </TR>
+        </TBody>
+      </Table>,
+    )
+    expect(container.firstElementChild).toHaveClass('overflow-auto', 'max-h-96')
+  })
 })
