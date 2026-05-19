@@ -25,7 +25,8 @@ versioning once formal releases begin.
 
 ### Changed
 
-- Frontend: removed the **Overview** tab; the app opens on **Columns** by default (`/` redirects to `/columns`). **What changed?** profile diff lives on the **Quality** tab.
+- Frontend: removed the **Overview** tab; the app opens on **Columns** by default (`/` redirects to `/columns`).
+- Frontend: removed the **Quality** tab; the header still shows the quality score, column flags and filters live on **Columns**, `/quality` redirects to `/columns`, and the profile-diff dialog was removed from the UI (API unchanged).
 - **`GET /api/datasets/{id}/profile`** no longer blocks on `build_profile`; returns **`PROFILE_NOT_READY`** with **`job_id`** when the cache is empty.
 - Upload/register queue profile refresh jobs; refresh endpoint dedupes active profile jobs.
 - Datasets API split into `datasets_upload`, `datasets_profile`, `datasets_inspect`, and `datasets_jobs` modules (URLs unchanged).
@@ -44,6 +45,7 @@ versioning once formal releases begin.
 - Unused `Label` and `Kbd` UI primitives (and their tests).
 - Unused exports `cardPadding` and `severityCssVar` from `tokens.ts`, and `chartGrid` from `chartTheme.ts`.
 - Stale `.streamlit/secrets.toml` entry from `.gitignore`.
+- Frontend **Quality** tab UI (`QualityPage`, profile diff dialog, issue list page).
 
 ## [0.1.0] - 2026-05-19
 

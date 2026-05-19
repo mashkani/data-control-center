@@ -15,7 +15,6 @@ beforeEach(() => {
     columnDrawerOpen: false,
     columnSearch: '',
     semanticFilter: 'all',
-    qualitySeverityFilter: 'all',
     pendingQuery: null,
     sqlInjectTick: 0,
     commandPaletteOpen: false,

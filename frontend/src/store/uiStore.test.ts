@@ -20,9 +20,6 @@ describe('uiStore', () => {
     useUiStore.getState().setSemanticFilter('numeric')
     expect(useUiStore.getState().semanticFilter).toBe('numeric')
 
-    useUiStore.getState().setQualitySeverityFilter('warning')
-    expect(useUiStore.getState().qualitySeverityFilter).toBe('warning')
-
     useUiStore.getState().setColumnQualityFilter('has_flags')
     expect(useUiStore.getState().columnQualityFilter).toBe('has_flags')
 

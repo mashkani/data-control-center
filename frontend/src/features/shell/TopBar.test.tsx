@@ -1,8 +1,7 @@
 import * as React from 'react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TopBar } from '@/features/shell/TopBar'
 import { useUiStore } from '@/store/uiStore'
@@ -32,33 +31,14 @@ vi.mock('@/api/client', async (importOriginal) => {
   }
 })
 
-function wrap(ui: React.ReactElement, initialEntry = '/columns') {
+function wrap(ui: React.ReactElement) {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
   return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
+    <MemoryRouter>
       <QueryClientProvider client={qc}>
         <TooltipProvider delayDuration={280}>{ui}</TooltipProvider>
-      </QueryClientProvider>
-    </MemoryRouter>,
-  )
-}
-
-function wrapWithRoutes(initialEntry = '/columns') {
-  const qc = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  })
-  return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
-      <QueryClientProvider client={qc}>
-        <TooltipProvider delayDuration={280}>
-          <TopBar />
-          <Routes>
-            <Route path="/quality" element={<div>Quality page</div>} />
-            <Route path="*" element={<div>Workspace</div>} />
-          </Routes>
-        </TooltipProvider>
       </QueryClientProvider>
     </MemoryRouter>,
   )
@@ -142,13 +122,6 @@ describe('TopBar', () => {
     const refresh = await waitFor(() => screen.getByRole('button', { name: /refresh profile/i }))
     const nav = screen.getByRole('navigation', { name: 'Primary' })
     expect(nav).not.toContainElement(refresh)
-  })
-
-  it('navigates to quality when the quality bar is clicked', async () => {
-    const user = userEvent.setup()
-    wrapWithRoutes('/columns')
-    const qualityBar = await waitFor(() => screen.getByTestId('quality-bar'))
-    await user.click(qualityBar)
-    await waitFor(() => expect(screen.getByText('Quality page')).toBeInTheDocument())
+    expect(screen.queryByRole('link', { name: /Quality/i })).toBeNull()
   })
 })

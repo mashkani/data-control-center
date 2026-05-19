@@ -82,7 +82,6 @@ export function useGlobalShortcuts() {
           navigate(path)
         }
         if (k === 'c') go('/columns')
-        else if (k === 'q') go('/quality')
         else if (k === 's') go('/samples')
         else if (k === 'a') go('/ask')
         else if (k === 'y') go('/sql')
@@ -100,7 +99,6 @@ export function useGlobalShortcuts() {
         void qc.invalidateQueries()
         if (activeId) {
           void qc.invalidateQueries({ queryKey: ['profile', activeId] })
-          void qc.invalidateQueries({ queryKey: ['quality', activeId] })
         }
         clearG()
       }

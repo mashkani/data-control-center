@@ -15,8 +15,6 @@ const SEM_VALUES = new Set([
   'unknown',
 ])
 
-const SEV_VALUES = new Set(['all', 'critical', 'warning', 'info'])
-
 function decodeColumnQuality(v: string | null): 'all' | 'has_flags' | 'critical_only' | null {
   if (v == null || v === '') return null
   if (v === 'all') return 'all'
@@ -32,7 +30,7 @@ function encodeColumnQuality(v: 'all' | 'has_flags' | 'critical_only'): string |
 }
 
 /**
- * Keeps `activeDatasetId` and filters in sync with the query string (`ds`, `q`, `sem`, `sev`, `col`, `cq`),
+ * Keeps `activeDatasetId` and filters in sync with the query string (`ds`, `q`, `sem`, `col`, `cq`),
  * and auto-selects the first dataset when the workspace has data but the URL omits `ds`.
  */
 export function UiUrlSync() {
@@ -43,7 +41,6 @@ export function UiUrlSync() {
   const activeId = useUiStore((s) => s.activeDatasetId)
   const columnSearch = useUiStore((s) => s.columnSearch)
   const semanticFilter = useUiStore((s) => s.semanticFilter)
-  const qualitySeverityFilter = useUiStore((s) => s.qualitySeverityFilter)
   const columnQualityFilter = useUiStore((s) => s.columnQualityFilter)
   const selectedColumn = useUiStore((s) => s.selectedColumn)
   const drawerOpen = useUiStore((s) => s.columnDrawerOpen)
@@ -51,7 +48,6 @@ export function UiUrlSync() {
   const setActive = useUiStore((s) => s.setActiveDatasetId)
   const setColumnSearch = useUiStore((s) => s.setColumnSearch)
   const setSemantic = useUiStore((s) => s.setSemanticFilter)
-  const setSev = useUiStore((s) => s.setQualitySeverityFilter)
   const setColumnQuality = useUiStore((s) => s.setColumnQualityFilter)
   const setSelectedColumn = useUiStore((s) => s.setSelectedColumn)
   const setDrawerOpen = useUiStore((s) => s.setColumnDrawerOpen)
@@ -91,9 +87,6 @@ export function UiUrlSync() {
     const sem = searchParams.get('sem')
     if (sem && SEM_VALUES.has(sem) && sem !== st.semanticFilter) setSemantic(sem)
 
-    const sev = searchParams.get('sev')
-    if (sev && SEV_VALUES.has(sev) && sev !== st.qualitySeverityFilter) setSev(sev)
-
     const cq = decodeColumnQuality(searchParams.get('cq'))
     if (cq && cq !== st.columnQualityFilter) setColumnQuality(cq)
   }, [
@@ -104,7 +97,6 @@ export function UiUrlSync() {
     setActive,
     setColumnSearch,
     setSemantic,
-    setSev,
     setColumnQuality,
     setSelectedColumn,
     setDrawerOpen,
@@ -144,16 +136,6 @@ export function UiUrlSync() {
       dirty = true
     }
 
-    if (qualitySeverityFilter !== 'all') {
-      if (next.get('sev') !== qualitySeverityFilter) {
-        next.set('sev', qualitySeverityFilter)
-        dirty = true
-      }
-    } else if (next.has('sev')) {
-      next.delete('sev')
-      dirty = true
-    }
-
     const cqEnc = encodeColumnQuality(columnQualityFilter)
     if (cqEnc) {
       if (next.get('cq') !== cqEnc) {
@@ -175,6 +157,11 @@ export function UiUrlSync() {
       dirty = true
     }
 
+    if (next.has('sev')) {
+      next.delete('sev')
+      dirty = true
+    }
+
     if (!dirty) return
     const a = next.toString()
     const b = searchParams.toString()
@@ -183,7 +170,6 @@ export function UiUrlSync() {
     activeId,
     columnSearch,
     semanticFilter,
-    qualitySeverityFilter,
     columnQualityFilter,
     selectedColumn,
     drawerOpen,

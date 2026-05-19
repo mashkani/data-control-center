@@ -16,8 +16,6 @@ type UiState = {
   setColumnSearch: (s: string) => void
   semanticFilter: string
   setSemanticFilter: (s: string) => void
-  qualitySeverityFilter: string
-  setQualitySeverityFilter: (s: string) => void
   columnQualityFilter: ColumnQualityFilter
   setColumnQualityFilter: (s: ColumnQualityFilter) => void
   pendingQuery: string | null
@@ -54,8 +52,6 @@ export const useUiStore = create<UiState>((set, get) => ({
   setColumnSearch: (s) => set({ columnSearch: s }),
   semanticFilter: 'all',
   setSemanticFilter: (s) => set({ semanticFilter: s }),
-  qualitySeverityFilter: 'all',
-  setQualitySeverityFilter: (s) => set({ qualitySeverityFilter: s }),
   columnQualityFilter: 'all',
   setColumnQualityFilter: (s) => set({ columnQualityFilter: s }),
   pendingQuery: null,

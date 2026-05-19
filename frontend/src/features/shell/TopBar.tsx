@@ -1,6 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
 import {
-  AlertCircle,
   HelpCircle,
   Loader2,
   Menu,
@@ -14,7 +13,7 @@ import {
   Terminal,
   XCircle,
 } from 'lucide-react'
-import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/api/client'
 import { useDatasetProfile } from '@/hooks/useDatasetProfile'
@@ -28,30 +27,22 @@ import { cn } from '@/lib/utils'
 
 const NAV: Array<{ to: string; label: string; icon: LucideIcon; end?: boolean }> = [
   { to: '/columns', label: 'Columns', icon: Table2, end: true },
-  { to: '/quality', label: 'Quality', icon: AlertCircle },
   { to: '/samples', label: 'Samples', icon: Rows3 },
   { to: '/ask', label: 'Ask', icon: MessageCircle },
   { to: '/sql', label: 'SQL', icon: Terminal },
 ]
 
-function QualityBar({
-  score,
-  onClick,
-}: {
-  score: number | null | undefined
-  onClick?: () => void
-}) {
+function QualityBar({ score }: { score: number | null | undefined }) {
   if (score == null) {
     return (
-      <button
-        type="button"
-        onClick={onClick}
-        className="inline-flex items-center gap-2 rounded-md px-1.5 py-0.5 text-xs text-fg-muted transition hover:bg-white/5"
-        aria-label="View quality overview"
+      <div
+        className="inline-flex items-center gap-2 px-1.5 py-0.5 text-xs text-fg-muted"
+        data-testid="quality-bar"
+        aria-label="Quality score unavailable"
       >
         <span className="text-[10px] font-medium uppercase tracking-wide text-fg-muted">Quality</span>
         <span>-</span>
-      </button>
+      </div>
     )
   }
   const sev = qualityScoreSeverity(score)
@@ -63,11 +54,9 @@ function QualityBar({
         ? 'bg-[hsl(var(--severity-warning))]'
         : 'bg-[hsl(var(--severity-ok))]'
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="inline-flex items-center gap-2 rounded-md px-1.5 py-0.5 transition hover:bg-white/5"
-      aria-label={`Quality score ${score}. View quality overview.`}
+    <div
+      className="inline-flex items-center gap-2 px-1.5 py-0.5"
+      aria-label={`Quality score ${score}`}
       data-testid="quality-bar"
     >
       <span className="text-[10px] font-medium uppercase tracking-wide text-fg-muted">Quality</span>
@@ -75,7 +64,7 @@ function QualityBar({
       <div className="h-1.5 w-16 overflow-hidden rounded-full bg-white/10">
         <div className={cn('h-full rounded-full transition-all', color)} style={{ width: `${pct}%` }} />
       </div>
-    </button>
+    </div>
   )
 }
 
@@ -87,7 +76,6 @@ function HeaderIdentity({
   format,
   updated,
   qScore,
-  onQualityClick,
 }: {
   name: string | null | undefined
   rows: number | null
@@ -96,7 +84,6 @@ function HeaderIdentity({
   format: string
   updated: number | undefined
   qScore: number | null | undefined
-  onQualityClick: () => void
 }) {
   return (
     <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
@@ -131,7 +118,7 @@ function HeaderIdentity({
       <span aria-hidden className="hidden text-white/25 md:inline">
         ·
       </span>
-      <QualityBar score={qScore} onClick={onQualityClick} />
+      <QualityBar score={qScore} />
     </div>
   )
 }
@@ -195,7 +182,6 @@ function HeaderActions({
 
 export function TopBar() {
   const location = useLocation()
-  const navigate = useNavigate()
   const activeId = useUiStore((s) => s.activeDatasetId)
   const setPalette = useUiStore((s) => s.setCommandPaletteOpen)
   const setShortcuts = useUiStore((s) => s.setShortcutSheetOpen)
@@ -219,10 +205,6 @@ export function TopBar() {
 
   const onRefresh = profileQ.refresh
   const onCancelRefresh = profileQ.cancelRefresh
-
-  const goQuality = () => {
-    navigate({ pathname: '/quality', search: location.search })
-  }
 
   return (
     <header className="shrink-0 border-b border-border-default bg-[hsl(var(--surface-1))]/60 backdrop-blur-md">
@@ -259,7 +241,6 @@ export function TopBar() {
             format={format}
             updated={updated}
             qScore={qScore}
-            onQualityClick={goQuality}
           />
         ) : (
           <div className="min-w-0 flex-1 space-y-1">

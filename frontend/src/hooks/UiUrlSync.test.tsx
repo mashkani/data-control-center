@@ -80,7 +80,6 @@ describe('UiUrlSync', () => {
       activeDatasetId: null,
       columnSearch: '',
       semanticFilter: 'all',
-      qualitySeverityFilter: 'all',
       columnQualityFilter: 'all',
       selectedColumn: null,
       columnDrawerOpen: false,
@@ -95,13 +94,12 @@ describe('UiUrlSync', () => {
 
   it('hydrates store filters and drawer state from URL params', async () => {
     useUiStore.setState({ activeDatasetId: 'ds_002' })
-    wrap('/columns?ds=ds_002&q=revenue&sem=numeric&sev=warning&cq=critical&col=amount')
+    wrap('/columns?ds=ds_002&q=revenue&sem=numeric&cq=critical&col=amount')
     await waitFor(() =>
       expect(useUiStore.getState()).toMatchObject({
         activeDatasetId: 'ds_002',
         columnSearch: 'revenue',
         semanticFilter: 'numeric',
-        qualitySeverityFilter: 'warning',
         columnQualityFilter: 'critical_only',
         selectedColumn: 'amount',
         columnDrawerOpen: true,
@@ -123,7 +121,6 @@ describe('UiUrlSync', () => {
       activeDatasetId: 'ds_002',
       columnSearch: 'profit',
       semanticFilter: 'datetime',
-      qualitySeverityFilter: 'info',
       columnQualityFilter: 'critical_only',
       selectedColumn: 'event_date',
       columnDrawerOpen: true,
@@ -134,7 +131,6 @@ describe('UiUrlSync', () => {
         ds: 'ds_002',
         q: 'profit',
         sem: 'datetime',
-        sev: 'info',
         cq: 'critical',
         col: 'event_date',
       }),
@@ -144,7 +140,6 @@ describe('UiUrlSync', () => {
       activeDatasetId: null,
       columnSearch: '',
       semanticFilter: 'all',
-      qualitySeverityFilter: 'all',
       columnQualityFilter: 'all',
       selectedColumn: null,
       columnDrawerOpen: false,

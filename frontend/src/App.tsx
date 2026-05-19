@@ -12,7 +12,6 @@ import { DatasetSidebar } from '@/features/datasets/DatasetSidebar'
 import { DatasetDropzone } from '@/features/datasets/DatasetDropzone'
 import { AskPage } from '@/features/ask/AskPage'
 import { ColumnsPage } from '@/features/columns/ColumnsPage'
-import { QualityPage } from '@/features/quality/QualityPage'
 import { SamplesPage } from '@/features/samples/SamplesPage'
 import { QueryPage } from '@/features/query/QueryPage'
 import { CommandPalette } from '@/features/shell/CommandPalette'
@@ -60,7 +59,7 @@ function RoutedPages() {
     <Routes>
       <Route path="/" element={<Navigate to="/columns" replace />} />
       <Route path="/columns" element={<ColumnsPage />} />
-      <Route path="/quality" element={<QualityPage />} />
+      <Route path="/quality" element={<Navigate to="/columns" replace />} />
       <Route path="/samples" element={<SamplesPage />} />
       <Route path="/ask" element={<AskPage />} />
       <Route path="/sql" element={<QueryPage />} />

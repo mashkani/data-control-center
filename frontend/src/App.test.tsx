@@ -20,7 +20,6 @@ vi.mock('@/api/client', () => ({
     listDatasets: vi.fn(),
     uploadDatasets: vi.fn(),
     fetchDatasetProfile: vi.fn(),
-    getQuality: vi.fn(),
     getSample: vi.fn(),
     runQuery: vi.fn(),
     getProfileHistory: vi.fn(),
@@ -43,7 +42,6 @@ describe('App', () => {
       activeDatasetId: null,
       columnSearch: '',
       semanticFilter: 'all',
-      qualitySeverityFilter: 'all',
       columnQualityFilter: 'all',
       selectedColumn: null,
       columnDrawerOpen: false,
@@ -61,7 +59,6 @@ describe('App', () => {
       },
     ])
     vi.mocked(api.fetchDatasetProfile).mockResolvedValue(mkProfile())
-    vi.mocked(api.getQuality).mockResolvedValue([])
     vi.mocked(api.getSample).mockResolvedValue({
       page: 1,
       page_size: 100,

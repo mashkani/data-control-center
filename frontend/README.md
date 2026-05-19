@@ -1,6 +1,6 @@
 # Data Control Center — Frontend
 
-React + Vite + TypeScript UI for browsing datasets, profiles, SQL, and quality insights.
+React + Vite + TypeScript UI for browsing datasets, profiles, and SQL.
 
 Product usage (tabs, shortcuts, Ask): [`docs/user-guide.md`](../docs/user-guide.md).
 
@@ -41,7 +41,7 @@ editing [`backend/app/`](../backend/app) (see root **`Makefile`**: `--reload-dir
 
 ## Layout and conventions
 
-- **`src/features/`** — route-level pages (columns, quality, samples, SQL, ask). The app
+- **`src/features/`** — route-level pages (columns, samples, SQL, ask). The app
   opens on **Columns** by default; see [user guide](../docs/user-guide.md#profiles-and-jobs).
 - **`src/api/`** — typed fetch client ([`client.ts`](src/api/client.ts)) and DTOs
   ([`types.ts`](src/api/types.ts)).
@@ -55,7 +55,6 @@ editing [`backend/app/`](../backend/app) (see root **`Makefile`**: `--reload-dir
 | --- | --- |
 | `['datasets']` | Dataset list |
 | `['profile', datasetId]` | Cached profile (prefer **`useDatasetProfile`**) |
-| `['quality', datasetId]` | Quality issues |
 
 Prefer **`useDatasetProfile`** (or **`api.fetchDatasetProfile`**) for profile loads; it
 handles **`PROFILE_NOT_READY`** by polling **`details.job_id`**. Manual refresh uses

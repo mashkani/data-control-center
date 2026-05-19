@@ -53,7 +53,7 @@ until **`completed`**, then retry.
 **`POST /api/datasets/{dataset_id}/profile/refresh`**. The UI handles job polling;
 see [`backend/README.md`](../backend/README.md) for job deduplication behavior.
 
-**Quality score:** Shown on the **Quality** tab and in the dataset list when a cached profile exists (0–100).
+**Quality score:** Shown in the header and dataset list when a cached profile exists (0–100). Column flags and filters on the **Columns** tab surface per-column quality issues.
 
 **Structure inference (v4):** Profiles detect composite row grain keys, discrete
 temporal axes, **entity identifiers** (separate from row grain), and ranked measure
@@ -64,7 +64,7 @@ metrics for duplicate rows, column uniqueness, categorical/boolean top values, d
 and inferred grain-key candidates. If those exact checks exceed the bounded profile budget,
 the UI keeps the sampled value and labels it using profile metadata.
 
-**History and diff:** Use **What changed?** on the **Quality** tab when multiple profile snapshots exist.
+**History and diff:** Profile snapshot diff is no longer exposed in the UI; use the API if you need historical comparison.
 
 **Saved SQL:** Snippets persist in the workspace and appear in the SQL tab and command palette.
 
@@ -124,5 +124,5 @@ a token via **`GET /api/local-session`** or pin **`DCC_LOCAL_API_TOKEN`** — se
 | **⌘/Ctrl+K** | Command palette |
 | **?** | Shortcuts sheet |
 | **/** | Focus dataset search |
-| **g** then **c** / **q** / **s** / **a** / **y** | Jump to Columns / Quality / Samples / Ask / SQL |
+| **g** then **c** / **s** / **a** / **y** | Jump to Columns / Samples / Ask / SQL |
 | **r** | Refresh cached queries |

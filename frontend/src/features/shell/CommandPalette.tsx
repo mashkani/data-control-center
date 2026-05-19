@@ -1,5 +1,4 @@
 import {
-  AlertCircle,
   MessageCircle,
   Rows3,
   Table2,
@@ -69,9 +68,6 @@ export function CommandPalette() {
             <Command.Group heading="Navigate">
               <Command.Item value="columns page" onSelect={() => go('/columns')}>
                 <Table2 /> Columns
-              </Command.Item>
-              <Command.Item value="quality page" onSelect={() => go('/quality')}>
-                <AlertCircle /> Quality
               </Command.Item>
               <Command.Item value="samples page" onSelect={() => go('/samples')}>
                 <Rows3 /> Samples
