@@ -5,7 +5,6 @@ const ROWS: Array<{ keys: string; action: string }> = [
   { keys: '⌘ K', action: 'Open command palette' },
   { keys: '?', action: 'Show this cheatsheet' },
   { keys: '/', action: 'Focus dataset search in sidebar' },
-  { keys: 'g o', action: 'Go to Overview' },
   { keys: 'g c', action: 'Go to Columns' },
   { keys: 'g q', action: 'Go to Quality' },
   { keys: 'g s', action: 'Go to Samples' },

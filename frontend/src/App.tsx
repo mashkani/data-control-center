@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { LayoutDashboard } from 'lucide-react'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { api } from '@/api/client'
 import { appQueryClient } from '@/appQueryClient'
 import { CardSkeleton } from '@/components/ui/skeleton'
@@ -10,7 +10,6 @@ import { Toaster } from '@/components/ui/toaster'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { DatasetSidebar } from '@/features/datasets/DatasetSidebar'
 import { DatasetDropzone } from '@/features/datasets/DatasetDropzone'
-import { OverviewPage } from '@/features/overview/OverviewPage'
 import { AskPage } from '@/features/ask/AskPage'
 import { ColumnsPage } from '@/features/columns/ColumnsPage'
 import { QualityPage } from '@/features/quality/QualityPage'
@@ -59,7 +58,7 @@ function EmptyWorkspaceHero() {
 function RoutedPages() {
   return (
     <Routes>
-      <Route path="/" element={<OverviewPage />} />
+      <Route path="/" element={<Navigate to="/columns" replace />} />
       <Route path="/columns" element={<ColumnsPage />} />
       <Route path="/quality" element={<QualityPage />} />
       <Route path="/samples" element={<SamplesPage />} />

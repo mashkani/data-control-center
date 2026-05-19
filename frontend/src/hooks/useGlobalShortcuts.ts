@@ -81,8 +81,7 @@ export function useGlobalShortcuts() {
           clearG()
           navigate(path)
         }
-        if (k === 'o') go('/')
-        else if (k === 'c') go('/columns')
+        if (k === 'c') go('/columns')
         else if (k === 'q') go('/quality')
         else if (k === 's') go('/samples')
         else if (k === 'a') go('/ask')

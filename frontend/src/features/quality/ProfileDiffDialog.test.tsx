@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { api } from '@/api/client'
-import { ProfileDiffDialog } from '@/features/overview/DiffDialog'
+import { ProfileDiffDialog } from '@/features/quality/ProfileDiffDialog'
 
 vi.mock('@/api/client', () => ({
   api: {

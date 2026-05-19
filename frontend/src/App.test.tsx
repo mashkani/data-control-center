@@ -97,7 +97,7 @@ describe('App', () => {
     const user = userEvent.setup()
     renderApp()
     await waitFor(() => expect(useUiStore.getState().activeDatasetId).toBe('ds_001'))
-    expect(screen.getByRole('link', { name: /Overview/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Columns/i })).toBeInTheDocument()
 
     await user.click(screen.getByRole('link', { name: /SQL/i }))
     await waitFor(() => expect(screen.getByRole('button', { name: 'Run query' })).toBeInTheDocument())

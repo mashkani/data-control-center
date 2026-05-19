@@ -21,10 +21,11 @@ versioning once formal releases begin.
 - `make check-ci` for clean-room CI-parity validation (`npm ci` then `make check`).
 - `useDatasetProfile` hook and `api.fetchDatasetProfile` for async first-open profiling (`PROFILE_NOT_READY` + job polling).
 - Registry `RLock` coverage for concurrent count/unregister paths.
-- Hook unit tests for `useDatasetProfile`, `useColumnsTable`, `useOverviewPageData`, `useSqlResultsGrid`, and `useSqlHistory`.
+- Hook unit tests for `useDatasetProfile`, `useColumnsTable`, `useSqlResultsGrid`, and `useSqlHistory`.
 
 ### Changed
 
+- Frontend: removed the **Overview** tab; the app opens on **Columns** by default (`/` redirects to `/columns`). **What changed?** profile diff lives on the **Quality** tab.
 - **`GET /api/datasets/{id}/profile`** no longer blocks on `build_profile`; returns **`PROFILE_NOT_READY`** with **`job_id`** when the cache is empty.
 - Upload/register queue profile refresh jobs; refresh endpoint dedupes active profile jobs.
 - Datasets API split into `datasets_upload`, `datasets_profile`, `datasets_inspect`, and `datasets_jobs` modules (URLs unchanged).

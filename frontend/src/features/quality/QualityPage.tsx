@@ -12,7 +12,8 @@ import { QueryErrorBanner } from '@/components/ui/query-error-banner'
 import { useDatasetProfile } from '@/hooks/useDatasetProfile'
 import { useOpenColumnDrawer } from '@/hooks/useOpenColumnDrawer'
 import { useUiStore } from '@/store/uiStore'
-import { QualityScoreSummary } from '@/features/overview/OverviewHeroMetrics'
+import { ProfileDiffDialog } from '@/features/quality/ProfileDiffDialog'
+import { QualityScoreSummary } from '@/features/quality/QualityScoreSummary'
 import { cn } from '@/lib/utils'
 
 const SEV_ORDER: Record<string, number> = { critical: 0, warning: 1, info: 2 }
@@ -178,6 +179,7 @@ export function QualityPage() {
   const setSev = useUiStore((s) => s.setQualitySeverityFilter)
   const openCol = useOpenColumnDrawer()
   const [sortMode, setSortMode] = useState<'severity' | 'impact' | 'columns'>('impact')
+  const [diffOpen, setDiffOpen] = useState(false)
 
   const q = useQuery({
     queryKey: ['quality', activeId],
@@ -254,7 +256,14 @@ export function QualityPage() {
 
   return (
     <PageContainer>
-      <Section title="Quality overview">
+      <Section
+        title="Quality overview"
+        action={
+          <Button type="button" variant="outline" size="sm" onClick={() => setDiffOpen(true)}>
+            What changed?
+          </Button>
+        }
+      >
         <QualityScoreSummary score={score} />
         <p className="mt-3 text-sm text-[hsl(var(--fg-muted))]">
           {counts.all} issue{counts.all === 1 ? '' : 's'} across {colSet.size} column
@@ -368,6 +377,7 @@ export function QualityPage() {
           ))}
         </div>
       )}
+      <ProfileDiffDialog datasetId={activeId} open={diffOpen} onOpenChange={setDiffOpen} />
     </PageContainer>
   )
 }

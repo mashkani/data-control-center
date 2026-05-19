@@ -1,6 +1,5 @@
 import {
   AlertCircle,
-  LayoutDashboard,
   MessageCircle,
   Rows3,
   Table2,
@@ -59,7 +58,7 @@ export function CommandPalette() {
                   value={`dataset ${d.name} ${d.dataset_id}`}
                   onSelect={() => {
                     setActive(d.dataset_id)
-                    go('/')
+                    go('/columns')
                   }}
                 >
                   <Table2 /> {d.name}{' '}
@@ -68,9 +67,6 @@ export function CommandPalette() {
               ))}
             </Command.Group>
             <Command.Group heading="Navigate">
-              <Command.Item value="overview page" onSelect={() => go('/')}>
-                <LayoutDashboard /> Overview
-              </Command.Item>
               <Command.Item value="columns page" onSelect={() => go('/columns')}>
                 <Table2 /> Columns
               </Command.Item>

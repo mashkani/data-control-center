@@ -88,9 +88,9 @@ describe('UiUrlSync', () => {
   })
 
   it('auto-selects the first dataset when URL omits ds', async () => {
-    wrap('/overview')
+    wrap('/columns')
     await waitFor(() => expect(useUiStore.getState().activeDatasetId).toBe('ds_001'))
-    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/overview?ds=ds_001'))
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/columns?ds=ds_001'))
   })
 
   it('hydrates store filters and drawer state from URL params', async () => {

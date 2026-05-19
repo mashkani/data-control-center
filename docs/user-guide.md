@@ -53,24 +53,18 @@ until **`completed`**, then retry.
 **`POST /api/datasets/{dataset_id}/profile/refresh`**. The UI handles job polling;
 see [`backend/README.md`](../backend/README.md) for job deduplication behavior.
 
-**Quality score:** Shown on Overview and in the dataset list when a cached profile exists (0–100).
-When only one profile snapshot exists, the quality card notes **No prior snapshot** instead of a trend delta.
-
-**Overview completeness:** The **Completeness** card shows populated vs missing cell %, estimated missing/duplicate counts, summary chips (columns with nulls), a compact top-5 null chart (click a bar to open the column), and links to **View flagged columns** (Columns tab, critical flags) and **All quality issues**. A full top-8 null ranking remains under **Quality focus**.
-
-**Profile summary:** When the profiler provides a narrative, Overview shows it under the hero metrics (expandable if long).
+**Quality score:** Shown on the **Quality** tab and in the dataset list when a cached profile exists (0–100).
 
 **Structure inference (v4):** Profiles detect composite row grain keys, discrete
 temporal axes, **entity identifiers** (separate from row grain), and ranked measure
-candidates. The **Overview → Structure** card labels **Entities**, grain columns, and
-**Row grain** separately. Older cached profiles are invalidated on read.
+candidates. Older cached profiles are invalidated on read.
 
 **Sampling scope:** Row/null counts are full-table. Profiles also try exact full-table
 metrics for duplicate rows, column uniqueness, categorical/boolean top values, date ranges,
 and inferred grain-key candidates. If those exact checks exceed the bounded profile budget,
 the UI keeps the sampled value and labels it using profile metadata.
 
-**History and diff:** Available from Overview when multiple profile snapshots exist.
+**History and diff:** Use **What changed?** on the **Quality** tab when multiple profile snapshots exist.
 
 **Saved SQL:** Snippets persist in the workspace and appear in the SQL tab and command palette.
 
@@ -130,5 +124,5 @@ a token via **`GET /api/local-session`** or pin **`DCC_LOCAL_API_TOKEN`** — se
 | **⌘/Ctrl+K** | Command palette |
 | **?** | Shortcuts sheet |
 | **/** | Focus dataset search |
-| **g** then **o** / **c** / **q** / **s** / **a** / **y** | Jump to Overview / Columns / Quality / Samples / Ask / SQL |
+| **g** then **c** / **q** / **s** / **a** / **y** | Jump to Columns / Quality / Samples / Ask / SQL |
 | **r** | Refresh cached queries |

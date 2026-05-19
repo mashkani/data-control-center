@@ -21,7 +21,7 @@ Uploads are copied into the app-owned upload directory before registration.
 
 ## 2. Inspect the data
 
-Select each dataset and browse **Overview**, **Columns**, and **Samples** (schema,
+Select each dataset and browse **Columns**, **Quality**, and **Samples** (schema,
 profile summaries, and sample rows). The files are deliberately small so inspection is
 immediate.
 

@@ -2,7 +2,6 @@ import type { LucideIcon } from 'lucide-react'
 import {
   AlertCircle,
   HelpCircle,
-  LayoutDashboard,
   Loader2,
   Menu,
   MessageCircle,
@@ -28,8 +27,7 @@ import { useUiStore } from '@/store/uiStore'
 import { cn } from '@/lib/utils'
 
 const NAV: Array<{ to: string; label: string; icon: LucideIcon; end?: boolean }> = [
-  { to: '/', label: 'Overview', icon: LayoutDashboard, end: true },
-  { to: '/columns', label: 'Columns', icon: Table2 },
+  { to: '/columns', label: 'Columns', icon: Table2, end: true },
   { to: '/quality', label: 'Quality', icon: AlertCircle },
   { to: '/samples', label: 'Samples', icon: Rows3 },
   { to: '/ask', label: 'Ask', icon: MessageCircle },

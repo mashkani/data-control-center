@@ -41,9 +41,8 @@ editing [`backend/app/`](../backend/app) (see root **`Makefile`**: `--reload-dir
 
 ## Layout and conventions
 
-- **`src/features/`** — route-level pages (overview, columns, quality, samples, SQL, ask).
-  On **Overview**, the **Structure** card separates **Entities** from **Row grain**; see
-  [user guide](../docs/user-guide.md#profiles-and-jobs).
+- **`src/features/`** — route-level pages (columns, quality, samples, SQL, ask). The app
+  opens on **Columns** by default; see [user guide](../docs/user-guide.md#profiles-and-jobs).
 - **`src/api/`** — typed fetch client ([`client.ts`](src/api/client.ts)) and DTOs
   ([`types.ts`](src/api/types.ts)).
 - **`src/lib/sql.ts`** — SQL identifier quoting and snippet builders ([`sql.test.ts`](src/lib/sql.test.ts)).
