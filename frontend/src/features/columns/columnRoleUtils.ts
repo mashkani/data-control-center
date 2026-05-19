@@ -10,17 +10,17 @@ export function roleSortKey(roles: ColumnRoleLabel[]): number {
   return roles.length * 100 + (COLUMN_ROLE_LABELS.length - minPri)
 }
 
+export function columnMeasureRole(col: ColumnProfile, structuralRoles: ColumnRoleLabel[]): boolean {
+  if (structuralRoles.length > 0) return false
+  return col.semantic_type === 'numeric'
+}
+
 export function buildColumnRoleMap(profile: DatasetProfile | undefined): Map<string, ColumnRoleLabel[]> {
   const out = new Map<string, ColumnRoleLabel[]>()
   if (!profile) return out
 
   const grainCols = profile.primary_grain_key_columns
   const entityCols = profile.entity_id_columns.map((e) => e.name)
-
-  const measureCols =
-    profile.measure_candidates.length > 0
-      ? profile.measure_candidates.map((m) => m.name)
-      : profile.main_numeric_measures
 
   const timeNames = new Set<string>()
   if (profile.primary_temporal_column?.name) timeNames.add(profile.primary_temporal_column.name)
@@ -38,7 +38,13 @@ export function buildColumnRoleMap(profile: DatasetProfile | undefined): Map<str
   for (const c of grainCols) addRole(c, 'grain key')
   for (const c of entityCols) addRole(c, 'entity id')
   for (const c of timeNames) addRole(c, 'time')
-  for (const c of measureCols) addRole(c, 'measure')
+
+  for (const col of profile.column_profiles) {
+    const structuralRoles = out.get(col.name) ?? []
+    if (columnMeasureRole(col, structuralRoles)) {
+      addRole(col.name, 'measure')
+    }
+  }
 
   for (const [k, roles] of out.entries()) {
     out.set(k, orderRank(roles))

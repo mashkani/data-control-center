@@ -68,11 +68,6 @@ export function useColumnsTable() {
     return false
   }, [q.data, columnRoleMap])
 
-  const hasAnyTop = useMemo(
-    () => (q.data?.column_profiles ?? []).some((r) => r.top_value != null),
-    [q.data],
-  )
-
   const allColumnDefs = useMemo(
     () => [
       colHelper.accessor('name', {
@@ -188,28 +183,6 @@ export function useColumnsTable() {
         sortingFn: sortOptionalNumber,
         cell: (ctx) => <DistributionCell row={ctx.row.original} />,
       }),
-      colHelper.accessor((r) => r.top_pct ?? null, {
-        id: 'top_pct',
-        header: 'Top',
-        sortingFn: sortOptionalNumber,
-        cell: (ctx) => {
-          const r = ctx.row.original
-          if (r.top_value == null && r.top_count == null) {
-            return <span className="text-[hsl(var(--fg-muted))]">—</span>
-          }
-          const scope = metricScopeLabel(r.metric_scope)
-          const title = `${r.top_value ?? ''} (${r.top_count}, ${r.top_pct ?? ''}%; ${scope})`
-          return (
-            <div className="max-w-[min(14rem,30vw)] min-w-0" title={title}>
-              <span className="block truncate font-mono text-xs text-fg">{r.top_value ?? '—'}</span>
-              <span className="block truncate tabular-nums text-[10px] text-[hsl(var(--fg-muted))]">
-                {formatCount(r.top_count)} · {formatPercent(r.top_pct)}
-                {r.metric_scope === 'sample' ? ' · sample' : ''}
-              </span>
-            </div>
-          )
-        },
-      }),
       colHelper.accessor('quality_flags', {
         header: 'Flags',
         sortingFn: (ra, rb, colId) => {
@@ -244,10 +217,9 @@ export function useColumnsTable() {
         const id = String(c.id)
         if (hiddenCols.includes(id)) return false
         if (id === 'role_col' && !hasAnyRole) return false
-        if (id === 'top_pct' && !hasAnyTop) return false
         return true
       }),
-    [allColumnDefs, hiddenCols, hasAnyRole, hasAnyTop],
+    [allColumnDefs, hiddenCols, hasAnyRole],
   )
 
   const data = useMemo(() => {
@@ -333,7 +305,6 @@ export function useColumnsTable() {
     summaryParts,
     clearAllFilters,
     hasAnyRole,
-    hasAnyTop,
     data,
   }
 }

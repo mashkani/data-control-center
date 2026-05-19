@@ -27,7 +27,6 @@ export const COLUMN_TOOLBAR_IDS: Array<{ id: string; label: string }> = [
   { id: 'unique_pct', label: 'Unique' },
   { id: 'range_col', label: 'Range' },
   { id: 'distribution', label: 'Distribution' },
-  { id: 'top_pct', label: 'Top' },
   { id: 'quality_flags', label: 'Flags' },
 ]
 

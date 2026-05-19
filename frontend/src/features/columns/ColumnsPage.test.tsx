@@ -113,7 +113,7 @@ describe('ColumnsPage', () => {
     )
   })
 
-  it('labels sampled uniqueness and top-value metrics', async () => {
+  it('labels sampled uniqueness metrics', async () => {
     const user = userEvent.setup()
     h.fetchDatasetProfile.mockResolvedValue(
       mkProfile({
@@ -150,6 +150,7 @@ describe('ColumnsPage', () => {
           mkColumn({ name: 'player_id', semantic_type: 'id_like' }),
           mkColumn({ name: 'season_year', semantic_type: 'categorical' }),
           mkColumn({ name: 'goals', semantic_type: 'numeric' }),
+          mkColumn({ name: 'pace', semantic_type: 'numeric' }),
           mkColumn({ name: 'notes', semantic_type: 'text' }),
         ],
       }),
@@ -175,6 +176,7 @@ describe('ColumnsPage', () => {
     expect(within(rowFor('season_year')).getByText('time')).toBeInTheDocument()
 
     expect(within(rowFor('goals')).getByText('measure')).toBeInTheDocument()
+    expect(within(rowFor('pace')).getByText('measure')).toBeInTheDocument()
 
     const notesRow = rowFor('notes')
     expect(within(notesRow).queryByText('grain key')).toBeNull()
@@ -201,14 +203,7 @@ describe('ColumnsPage', () => {
     expect(screen.queryByRole('columnheader', { name: /^Role/ })).toBeNull()
   })
 
-  it('hides Top column when no top values exist in dataset', async () => {
-    h.fetchDatasetProfile.mockResolvedValue(
-      mkProfile({
-        column_profiles: [
-          mkColumn({ name: 'alpha', top_value: null, top_count: null, top_pct: null, quality_flags: [] }),
-        ],
-      }),
-    )
+  it('does not show a Top column in the table', async () => {
     useUiStore.setState({ activeDatasetId: 'ds_1' })
     wrap(<ColumnsPage />)
     await waitFor(() => expect(screen.getByRole('table')).toBeInTheDocument())

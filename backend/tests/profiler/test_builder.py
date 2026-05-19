@@ -562,6 +562,53 @@ def test_build_profile_role_specific_sparse_columns_are_downgraded(tmp_path: Pat
     assert "role-specific metric" in gk_issue.why_it_matters.lower()
 
 
+def test_build_profile_wide_rating_schema_treats_stat_columns_as_numeric_measures(
+    tmp_path: Path,
+) -> None:
+    stat_names = [
+        "gk_reflexes",
+        "gk_handling",
+        "defensive_awareness",
+        "age",
+        "height_cm",
+        "pace",
+        "shooting",
+    ]
+    rows: list[dict] = []
+    for year in (2022, 2023, 2024):
+        for pid in range(1, 101):
+            row: dict = {
+                "player_id": pid,
+                "year": year,
+                "position": "FW" if pid % 3 == 0 else "GK" if pid % 3 == 1 else "MF",
+            }
+            for name in stat_names:
+                if name.startswith("gk_") and pid % 3 != 1:
+                    row[name] = None
+                elif name == "age":
+                    row[name] = 16 + (pid % 20)
+                elif name == "height_cm":
+                    row[name] = 160 + (pid % 40)
+                else:
+                    row[name] = 40 + (pid % 60)
+            rows.append(row)
+
+    prof = _registered_profile(
+        tmp_path,
+        pl.DataFrame(rows),
+        settings=Settings(),
+        filename="wide_ratings.parquet",
+    )
+
+    stat_set = set(stat_names)
+    for col in prof.column_profiles:
+        if col.name in stat_set:
+            assert col.semantic_type == SemanticType.numeric, col.name
+
+    measure_names = {m.name for m in prof.measure_candidates}
+    assert stat_set.issubset(measure_names)
+
+
 def test_lazy_frame_json_array_file(tmp_path: Path) -> None:
     path = tmp_path / "data.json"
     path.write_text('[{"a": 1}, {"a": 2}]')
