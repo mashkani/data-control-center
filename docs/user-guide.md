@@ -60,8 +60,10 @@ temporal axes, **entity identifiers** (separate from row grain), and ranked meas
 candidates. The **Overview → Structure** card labels **Entities**, grain columns, and
 **Row grain** separately. Older cached profiles are invalidated on read.
 
-**Sampling scope:** Row/null counts are full-table; high-cardinality metrics may be
-sampled. The UI labels sampled metrics using profile metadata.
+**Sampling scope:** Row/null counts are full-table. Profiles also try exact full-table
+metrics for duplicate rows, column uniqueness, categorical/boolean top values, date ranges,
+and inferred grain-key candidates. If those exact checks exceed the bounded profile budget,
+the UI keeps the sampled value and labels it using profile metadata.
 
 **History and diff:** Available from Overview when multiple profile snapshots exist.
 

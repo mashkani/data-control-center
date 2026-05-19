@@ -97,6 +97,7 @@ after validation. Incompatible layouts fail fast—see root [README — Upgradin
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | **`DCC_PROFILE_TIMEOUT_SECONDS`** | `20` | Overall profiling time budget |
+| **`DCC_PROFILE_FULL_METRICS_TIMEOUT_SECONDS`** | `8` | Best-effort timeout for exact full-table profile metrics before sample fallback |
 | **`DCC_REGISTRATION_COUNT_TIMEOUT_SECONDS`** | `6` | Row-count timeout at registration |
 | **`DCC_PROFILE_STRUCTURE_SAMPLE_MAX_ROWS`** | `50000` | Structure inference sample cap |
 | **`DCC_PROFILE_STRUCTURE_SAMPLE_MIN_ROWS`** | `5000` | Structure inference sample floor |
@@ -106,8 +107,11 @@ after validation. Incompatible layouts fail fast—see root [README — Upgradin
 | **`DCC_PROFILE_STRUCTURE_HIGH_CONFIDENCE_THRESHOLD`** | `0.999` | High-confidence uniqueness ratio |
 | **`DCC_PROFILE_STRUCTURE_MEDIUM_CONFIDENCE_THRESHOLD`** | `0.98` | Medium-confidence uniqueness ratio |
 
-Profile responses expose sampling scope metadata (`metric_scope`, `duplicate_row_pct_scope`,
-`grain_key_scope`). Inference: [`app/services/profiler/`](app/services/profiler/).
+Profiles first build bounded sample-based EDA, then try exact full-table metrics for duplicate
+rows, per-column uniqueness/ranges/top values, and sampled grain-key candidates. If the exact
+pass times out or fails, responses keep the sample value and expose that through scope metadata
+(`metric_scope`, `duplicate_row_pct_scope`, `grain_key_scope`) plus `profile_metric_warnings`.
+Inference: [`app/services/profiler/`](app/services/profiler/).
 
 ### Built UI (single-server mode)
 

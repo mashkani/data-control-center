@@ -1,12 +1,15 @@
 import { formatPercent } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import type { MetricScope } from '@/api/types'
 
 export function CompletenessBars({
   missingPct,
   duplicatePct,
+  duplicateScope,
 }: {
   missingPct: number | null
   duplicatePct: number | null
+  duplicateScope?: MetricScope | null
 }) {
   const missing = missingPct != null ? Math.min(100, Math.max(0, missingPct)) : null
   const duplicate = duplicatePct != null ? Math.min(100, Math.max(0, duplicatePct)) : null
@@ -34,7 +37,9 @@ export function CompletenessBars({
       </div>
       <div>
         <div className="mb-1 flex items-baseline justify-between gap-2">
-          <span className="text-xs font-medium text-[hsl(var(--fg-muted))]">Duplicate rows (sample)</span>
+          <span className="text-xs font-medium text-[hsl(var(--fg-muted))]">
+            {duplicateScope === 'sample' ? 'Duplicate rows (sample)' : 'Duplicate rows'}
+          </span>
           <span className="tabular-nums text-sm font-semibold text-white">
             {duplicate != null ? formatPercent(duplicate) : '—'}
           </span>

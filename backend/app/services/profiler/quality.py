@@ -81,8 +81,8 @@ def _detect_quality_issues(
     composite_grain = len(grain_set) > 1
 
     # duplicate primary candidate (sample-uniqueness vs effective rows)
-    eff = min(row_count, sample_rows) if row_count else sample_rows
     for c in cols:
+        eff = row_count if c.metric_scope.value == "full" else min(row_count, sample_rows) if row_count else sample_rows
         if c.semantic_type == SemanticType.id_like and eff > 0:
             if composite_grain and c.name in grain_set:
                 continue

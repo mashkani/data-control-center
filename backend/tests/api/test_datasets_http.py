@@ -95,7 +95,7 @@ def test_profile_invalidates_stale_cached_structure_version(client, tmp_path):
     assert reg.status_code == 200
     did = reg.json()["dataset_id"]
     body = _wait_for_profile(client, did)
-    assert body["structure_version"] == "v4"
+    assert body["structure_version"] == "v5"
     stale = {**body, "structure_version": "v2"}
     client.app.state.workspace.profiles.save_profile_cache(did, stale)
     pr2 = client.get(f"/api/datasets/{did}/profile")
@@ -769,7 +769,7 @@ def test_refresh_profile_canceled_after_build(client, tmp_path, monkeypatch) -> 
 
     monkeypatch.setattr(
         "app.api.datasets_jobs.build_profile",
-        lambda ds: DatasetProfile.model_validate(cached_profile),
+        lambda *_args, **_kwargs: DatasetProfile.model_validate(cached_profile),
     )
     monkeypatch.setattr(JobStore, "job_cancel_requested", fake_cancel)
     pr = client.post(f"/api/datasets/{did}/profile/refresh")

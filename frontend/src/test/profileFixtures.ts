@@ -11,6 +11,7 @@ export function mkProfile(overrides: Partial<DatasetProfile> = {}): DatasetProfi
     missing_cell_pct: 1,
     duplicate_row_pct: 0,
     duplicate_row_pct_scope: 'full',
+    profile_metric_warnings: [],
     numeric_column_count: 1,
     categorical_column_count: 1,
     datetime_column_count: 0,

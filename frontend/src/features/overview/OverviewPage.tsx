@@ -91,7 +91,11 @@ export function OverviewPage() {
                 : 'Share of missing cells and duplicate rows.'
             }
           >
-            <CompletenessBars missingPct={p.missing_cell_pct} duplicatePct={p.duplicate_row_pct} />
+            <CompletenessBars
+              missingPct={p.missing_cell_pct}
+              duplicatePct={p.duplicate_row_pct}
+              duplicateScope={p.duplicate_row_pct_scope}
+            />
           </FigureCard>
         </div>
         <div className="mt-3 min-w-0">

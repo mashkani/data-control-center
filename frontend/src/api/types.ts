@@ -91,6 +91,7 @@ export type DatasetProfile = {
   missing_cell_pct: number | null
   duplicate_row_pct: number | null
   duplicate_row_pct_scope?: MetricScope | null
+  profile_metric_warnings?: string[]
   numeric_column_count: number
   categorical_column_count: number
   datetime_column_count: number

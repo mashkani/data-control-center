@@ -161,6 +161,7 @@ class DatasetProfile(BaseModel):
     missing_cell_pct: float | None = None
     duplicate_row_pct: float | None = None
     duplicate_row_pct_scope: MetricScope | None = None
+    profile_metric_warnings: list[str] = Field(default_factory=list)
     numeric_column_count: int = 0
     categorical_column_count: int = 0
     datetime_column_count: int = 0

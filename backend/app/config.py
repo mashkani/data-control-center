@@ -31,6 +31,7 @@ class Settings(BaseSettings):
 
     # Profile/build timeout controls.
     profile_timeout_seconds: float = Field(default=20.0, ge=0.5, le=600.0)
+    profile_full_metrics_timeout_seconds: float = Field(default=8.0, ge=0.2, le=300.0)
     registration_count_timeout_seconds: float = Field(default=6.0, ge=0.2, le=300.0)
     profile_structure_sample_max_rows: int = Field(default=50_000, ge=1_000, le=300_000)
     profile_structure_sample_min_rows: int = Field(default=5_000, ge=500, le=100_000)

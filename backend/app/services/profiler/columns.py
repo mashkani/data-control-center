@@ -23,6 +23,7 @@ from app.services.profiler.patterns import (
     ID_NAME_PATTERN,
     _normalize_column_name,
 )
+from app.services.profiler.full_metrics import FullColumnMetric
 from app.services.profiler.structure import _is_discrete_temporal_column
 
 def _infer_semantic(
@@ -158,6 +159,7 @@ def _derive_column_profiles(
     sample_n: int,
     profile_sample_rows: int,
     metric_scope: MetricScope,
+    full_column_metrics: dict[str, FullColumnMetric] | None = None,
 ) -> tuple[
     list[ColumnProfile],
     int,
@@ -174,15 +176,18 @@ def _derive_column_profiles(
         null_pct = (nulls_full / row_count * 100) if row_count else 0.0
         null_cells += nulls_full
 
-        n_unique = int(df_sample[col].n_unique())
+        full_metric = (full_column_metrics or {}).get(col)
+        col_metric_scope = MetricScope.full if full_metric is not None else metric_scope
+        n_unique = full_metric.unique_count if full_metric is not None else int(df_sample[col].n_unique())
         cardinality = n_unique
+        metric_rows = row_count if full_metric is not None else profile_sample_rows
 
         sem = _infer_semantic(
             col,
             dtype,
             null_pct,
             n_unique,
-            min(row_count, sample_n),
+            row_count if full_metric is not None else min(row_count, sample_n),
             df_sample[col].head(50).to_list(),
         )
 
@@ -194,18 +199,28 @@ def _derive_column_profiles(
         if sem == SemanticType.numeric or dtype in (pl.Float32, pl.Float64, pl.Int64, pl.Int32):
             if dtype.is_numeric():
                 st = df_sample[col].drop_nulls()
+                if full_metric and (full_metric.min_value is not None or full_metric.max_value is not None):
+                    min_v = full_metric.min_value
+                    max_v = full_metric.max_value
                 if st.len() > 0:
-                    min_v = str(st.min())
-                    max_v = str(st.max())
+                    if min_v is None:
+                        min_v = str(st.min())
+                    if max_v is None:
+                        max_v = str(st.max())
                     hist = _numeric_histogram(df_sample[col])
                 top_vals = _top_values(df_sample[col].cast(pl.Utf8, strict=False), k=8)
         elif sem in (SemanticType.categorical, SemanticType.boolean_like):
-            top_vals = _top_values(df_sample[col], k=8)
+            top_vals = full_metric.top_values if full_metric and full_metric.top_values is not None else _top_values(df_sample[col], k=8)
         elif sem == SemanticType.datetime or dtype in (pl.Date, pl.Datetime):
             st = df_sample[col].drop_nulls()
+            if full_metric and (full_metric.min_value is not None or full_metric.max_value is not None):
+                min_v = full_metric.min_value
+                max_v = full_metric.max_value
             if st.len() > 0:
-                min_v = str(st.min())
-                max_v = str(st.max())
+                if min_v is None:
+                    min_v = str(st.min())
+                if max_v is None:
+                    max_v = str(st.max())
             temporal_cols.append(
                 TemporalColumnInfo(
                     name=col,
@@ -239,10 +254,10 @@ def _derive_column_profiles(
             flags.append("high_missingness")
         if null_pct > 5 and sem == SemanticType.id_like:
             flags.append("id_with_nulls")
-        if row_count and n_unique == 1:
+        if metric_rows and n_unique == 1:
             flags.append("constant_column")
 
-        unique_pct = round((n_unique / profile_sample_rows) * 100, 4) if profile_sample_rows else None
+        unique_pct = round((n_unique / metric_rows) * 100, 4) if metric_rows else None
         mean_value = std_value = median_value = p25_value = p75_value = None
         top_value_str: str | None = None
         top_count_val: int | None = None
@@ -263,7 +278,7 @@ def _derive_column_profiles(
             raw = top_vals[0]["value"]
             top_value_str = "(null)" if raw is None else str(raw)
             top_count_val = int(top_vals[0].get("count", 0))
-            top_pct_val = round((top_count_val / profile_sample_rows) * 100, 4) if profile_sample_rows else None
+            top_pct_val = round((top_count_val / metric_rows) * 100, 4) if metric_rows else None
 
         col_profiles.append(
             ColumnProfile(
@@ -289,7 +304,7 @@ def _derive_column_profiles(
                 top_values=top_vals,
                 quality_flags=flags,
                 histogram=hist,
-                metric_scope=metric_scope,
+                metric_scope=col_metric_scope,
             )
         )
 

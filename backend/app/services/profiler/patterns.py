@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 
-CURRENT_PROFILE_STRUCTURE_VERSION = "v4"
+CURRENT_PROFILE_STRUCTURE_VERSION = "v5"
 
 ID_NAME_PATTERN = re.compile(
     r"(^|_)(id|key|uuid|guid|pk|sk|code)(_|$)", re.IGNORECASE

@@ -116,6 +116,8 @@ export const datasetProfileFixture: DatasetProfile = {
   file_size_bytes: 100,
   missing_cell_pct: 0,
   duplicate_row_pct: 0,
+  duplicate_row_pct_scope: 'full',
+  profile_metric_warnings: [],
   numeric_column_count: 1,
   categorical_column_count: 1,
   datetime_column_count: 0,

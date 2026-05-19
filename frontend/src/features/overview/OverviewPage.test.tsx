@@ -158,6 +158,19 @@ describe('OverviewPage', () => {
     await waitFor(() => expect(screen.getByText(/duplicate rows in the profiler sample/i)).toBeInTheDocument())
   })
 
+  it('labels duplicate rows as full-table when profiler scope is full', async () => {
+    h.fetchDatasetProfile.mockResolvedValue(
+      mkProfile({
+        duplicate_row_pct: 2,
+        duplicate_row_pct_scope: 'full',
+      }),
+    )
+    useUiStore.setState({ activeDatasetId: 'ds_001' })
+    wrap(<OverviewPage />)
+    await waitFor(() => expect(screen.getByText('Duplicate rows')).toBeInTheDocument())
+    expect(screen.queryByText(/Duplicate rows \(sample\)/i)).not.toBeInTheDocument()
+  })
+
   it('opens the diff dialog and renders empty chart fallbacks', async () => {
     const user = userEvent.setup()
     h.fetchDatasetProfile.mockResolvedValue(

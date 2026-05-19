@@ -36,7 +36,7 @@ def _profile_refresh_fn(
         if not ds:
             return {"dataset_id": dataset_id, "status": "missing"}
         workspace.profiles.delete_profile_cache(dataset_id)
-        prof = build_profile(ds, settings)
+        prof = build_profile(ds, settings, workspace)
         if workspace.jobs.job_cancel_requested(job_id):  # pragma: no cover
             return {"dataset_id": dataset_id, "status": "canceled"}
         workspace.profiles.save_profile_cache(dataset_id, prof.model_dump(mode="json"))

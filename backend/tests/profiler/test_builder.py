@@ -24,6 +24,7 @@ from app.services.profiler.columns import (
     _series_quantile_str,
     _top_values,
 )
+from app.services.profiler.full_metrics import FullColumnMetric, FullProfileMetrics
 from app.services.profiler.io import _lazy_frame_for
 from app.services.profiler.patterns import _entity_name_strength
 from app.services.profiler.quality import _detect_quality_issues, _severity_order
@@ -35,7 +36,32 @@ from app.services.profiler.structure import (
     _merge_entity_candidates,
     _rank_measure_candidates,
 )
-from app.services.registry import RegisteredDataset
+from app.services.registry import DatasetRegistry, RegisteredDataset
+from app.services.workspace import Workspace
+
+
+def _registered_profile(
+    tmp_path: Path,
+    df: pl.DataFrame,
+    *,
+    settings: Settings,
+    filename: str = "full_metrics.parquet",
+):
+    path = tmp_path / filename
+    df.write_parquet(path)
+    actual_settings = settings.model_copy(
+        update={
+            "workspace_db_path": tmp_path / "workspace.duckdb",
+            "allow_arbitrary_registration_paths": True,
+        }
+    )
+    ws = Workspace(actual_settings)
+    try:
+        reg = DatasetRegistry(ws, actual_settings)
+        ds = reg.register_path(path)
+        return build_profile(ds, actual_settings, ws)
+    finally:
+        ws.close()
 
 
 def test_lazy_frame_unsupported_format(tmp_path: Path) -> None:
@@ -306,7 +332,7 @@ def test_build_profile_detects_discrete_temporal_and_composite_grain(tmp_path: P
         file_size_bytes=path.stat().st_size,
     )
     prof = build_profile(ds, Settings())
-    assert prof.structure_version == "v4"
+    assert prof.structure_version == "v5"
     assert prof.primary_temporal_column is not None
     assert prof.primary_temporal_column.name == "year"
     assert prof.primary_temporal_column.kind.value == "discrete_period"
@@ -340,7 +366,7 @@ def test_build_profile_finds_panel_grain_with_player_id_late_in_schema(tmp_path:
         file_size_bytes=path.stat().st_size,
     )
     prof = build_profile(ds, Settings())
-    assert prof.structure_version == "v4"
+    assert prof.structure_version == "v5"
     assert {*prof.primary_grain_key_columns} == {"playerId", "year"}
     assert any(e.name == "playerId" for e in prof.entity_id_columns)
 
@@ -844,6 +870,138 @@ def test_build_profile_unique_count_when_full_table_exceeds_sample(
     assert region.top_value in {"east", "west", "north", "south"}
     assert region.top_count is not None
     assert region.top_pct is not None
+
+
+def test_build_profile_full_metrics_detect_late_duplicate_rows(tmp_path: Path) -> None:
+    settings = Settings(profile_structure_sample_max_rows=1_000, profile_structure_sample_min_rows=500)
+    df = pl.DataFrame(
+        {
+            "row_id": list(range(1_000)) + [100, 100] + list(range(1_002, 1_200)),
+            "value": list(range(1_000)) + [7, 7] + list(range(1_002, 1_200)),
+        }
+    )
+    prof = _registered_profile(tmp_path, df, settings=settings, filename="late_dups.parquet")
+
+    assert prof.profiler_sample_rows == 1_000
+    assert prof.duplicate_row_pct_scope is not None
+    assert prof.duplicate_row_pct_scope.value == "full"
+    assert abs((prof.duplicate_row_pct or 0) - 0.1667) < 0.001
+
+
+def test_build_profile_full_metrics_reject_sample_only_grain(tmp_path: Path) -> None:
+    settings = Settings(profile_structure_sample_max_rows=1_000, profile_structure_sample_min_rows=500)
+    df = pl.DataFrame(
+        {
+            "entity_id": list(range(1_000)) + [1] * 200,
+            "amount": list(range(1_200)),
+        }
+    )
+    prof = _registered_profile(tmp_path, df, settings=settings, filename="late_key_dup.parquet")
+
+    assert prof.grain_key_scope.value == "full"
+    assert "entity_id" not in prof.primary_grain_key_columns
+    assert all(candidate.columns != ["entity_id"] for candidate in prof.grain_key_candidates)
+
+
+def test_build_profile_full_unique_counts_null_and_prevents_false_constant(tmp_path: Path) -> None:
+    settings = Settings(profile_structure_sample_max_rows=1_000, profile_structure_sample_min_rows=500)
+    df = pl.DataFrame({"status": ["same"] * 1_000 + ["other", None]})
+    prof = _registered_profile(tmp_path, df, settings=settings, filename="late_variation.parquet")
+    col = next(c for c in prof.column_profiles if c.name == "status")
+
+    assert col.metric_scope.value == "full"
+    assert col.unique_count == 3
+    assert "constant_column" not in col.quality_flags
+
+
+def test_build_profile_full_top_values_use_full_table_distribution(tmp_path: Path) -> None:
+    settings = Settings(profile_structure_sample_max_rows=1_000, profile_structure_sample_min_rows=500)
+    df = pl.DataFrame({"segment": ["a"] * 1_000 + ["b"] * 2_000})
+    prof = _registered_profile(tmp_path, df, settings=settings, filename="top_values.parquet")
+    col = next(c for c in prof.column_profiles if c.name == "segment")
+
+    assert col.metric_scope.value == "full"
+    assert col.top_value == "b"
+    assert col.top_count == 2_000
+    assert col.top_pct is not None
+    assert abs(col.top_pct - 66.6667) < 0.01
+
+
+def test_build_profile_full_datetime_range_uses_full_table(tmp_path: Path) -> None:
+    from datetime import date
+
+    settings = Settings(profile_structure_sample_max_rows=1_000, profile_structure_sample_min_rows=500)
+    df = pl.DataFrame(
+        {
+            "event_date": pl.Series(
+                "event_date",
+                [None] * 1_000 + [date(2019, 1, 1), date(2022, 1, 1)],
+                dtype=pl.Date,
+            ),
+            "value": list(range(1_002)),
+        }
+    )
+    prof = _registered_profile(tmp_path, df, settings=settings, filename="date_range.parquet")
+    col = next(c for c in prof.column_profiles if c.name == "event_date")
+
+    assert col.metric_scope.value == "full"
+    assert col.min_value == "2019-01-01"
+    assert col.max_value == "2022-01-01"
+
+
+def test_build_profile_full_metrics_failure_falls_back_to_sample(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    settings = Settings(profile_structure_sample_max_rows=1_000, profile_structure_sample_min_rows=500)
+
+    def boom(*_args, **_kwargs):
+        raise RuntimeError("full metrics unavailable")
+
+    monkeypatch.setattr("app.services.profiler.builder.collect_full_profile_metrics", boom)
+    prof = _registered_profile(
+        tmp_path,
+        pl.DataFrame({"id": list(range(1_200)), "segment": ["a"] * 1_200}),
+        settings=settings,
+        filename="fallback.parquet",
+    )
+    col = next(c for c in prof.column_profiles if c.name == "id")
+
+    assert col.metric_scope.value == "sample"
+    assert prof.duplicate_row_pct_scope is not None
+    assert prof.duplicate_row_pct_scope.value == "sample"
+    assert prof.profile_metric_warnings
+
+
+def test_build_profile_merges_late_top_values_without_initial_column_metric(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    settings = Settings(profile_structure_sample_max_rows=1_000, profile_structure_sample_min_rows=500)
+    calls = {"count": 0}
+
+    def fake_full_metrics(*_args, **kwargs):
+        calls["count"] += 1
+        if kwargs.get("include_columns") is False:
+            return FullProfileMetrics(
+                column_metrics={
+                    "segment": FullColumnMetric(
+                        unique_count=0,
+                        top_values=[{"value": "late", "count": 1_200}],
+                    )
+                }
+            )
+        return FullProfileMetrics(duplicate_row_pct=0, column_metrics={})
+
+    monkeypatch.setattr("app.services.profiler.builder.collect_full_profile_metrics", fake_full_metrics)
+    prof = _registered_profile(
+        tmp_path,
+        pl.DataFrame({"segment": ["sample"] * 1_000 + ["late"] * 1_200}),
+        settings=settings,
+        filename="late_top_merge.parquet",
+    )
+    col = next(c for c in prof.column_profiles if c.name == "segment")
+
+    assert calls["count"] == 2
+    assert col.top_value == "late"
 
 
 def test_build_profile_numeric_describe_stats(tmp_path: Path) -> None:
