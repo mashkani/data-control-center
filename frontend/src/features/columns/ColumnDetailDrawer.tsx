@@ -35,6 +35,24 @@ function SqlSnippet({ label, sql }: { label: string; sql: string }) {
   )
 }
 
+function formatHistogramEdge(raw: string): string {
+  const trimmed = raw.trim()
+  if (trimmed === '-inf' || trimmed === '-Infinity') return '-inf'
+  if (trimmed === 'inf' || trimmed === 'Infinity') return 'inf'
+  return formatEdaNumericString(trimmed)
+}
+
+function formatHistogramBinLabel(bin: string): string {
+  const match = bin.trim().match(/^([[()])\s*([^,]+)\s*,\s*([^\])]+)\s*([\])])$/)
+  if (!match) return bin
+  const [, leftBracket, start, end, rightBracket] = match
+  return `${leftBracket}${formatHistogramEdge(start)}, ${formatHistogramEdge(end)}${rightBracket}`
+}
+
+type ChartTooltipParam = {
+  dataIndex?: number
+}
+
 export function ColumnDetailDrawer({
   open,
   onOpenChange,
@@ -53,18 +71,36 @@ export function ColumnDetailDrawer({
   const distActive = open && !!column && tab === 'distribution'
   const hist = column?.histogram ?? []
   const hasHist = hist.length > 0
+  const histBins = hist.map((x) => ({
+    raw: x.bin,
+    label: formatHistogramBinLabel(x.bin),
+    count: x.count,
+  }))
 
   useDisposableEChart(
     histRef,
     distActive && hasHist,
     () => ({
-      grid: { left: 12, right: 12, top: 24, bottom: 24, containLabel: true },
-      xAxis: { type: 'category', data: hist.map((x) => x.bin), axisLabel: { rotate: 35 } },
+      grid: { left: 12, right: 12, top: 24, bottom: 64, containLabel: true },
+      xAxis: {
+        type: 'category',
+        data: histBins.map((x) => x.label),
+        axisLabel: { interval: 'auto', hideOverlap: true, margin: 12 },
+      },
       yAxis: { type: 'value' },
-      series: [{ type: 'bar', data: hist.map((x) => x.count) }],
-      tooltip: { trigger: 'axis' },
+      series: [{ type: 'bar', data: histBins.map((x) => x.count), barMaxWidth: 32 }],
+      tooltip: {
+        trigger: 'axis',
+        formatter: (params: ChartTooltipParam | ChartTooltipParam[]) => {
+          const point = Array.isArray(params) ? params[0] : params
+          if (!point || typeof point.dataIndex !== 'number') return ''
+          const bucket = histBins[point.dataIndex]
+          if (!bucket) return ''
+          return `${bucket.raw}<br/>Count: ${formatCount(bucket.count)}`
+        },
+      },
     }),
-    [column, hist],
+    [column, histBins],
   )
 
   useDisposableEChart(

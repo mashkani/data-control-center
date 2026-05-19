@@ -5,15 +5,40 @@ import { describe, expect, it, vi } from 'vitest'
 import { ColumnDetailDrawer } from '@/features/columns/ColumnDetailDrawer'
 import { mkColumn } from '@/test/profileFixtures'
 
+const setOptionMock = vi.fn()
+
 vi.mock('echarts', () => ({
   init: vi.fn(() => ({
-    setOption: vi.fn(),
+    setOption: setOptionMock,
     resize: vi.fn(),
     dispose: vi.fn(),
   })),
 }))
 
 describe('ColumnDetailDrawer', () => {
+  it('compacts histogram bucket labels for the side panel chart', () => {
+    setOptionMock.mockClear()
+    const col = mkColumn({
+      histogram: [
+        { bin: '(-inf, 5]', count: 2 },
+        { bin: '[12.333333333333332, 19.666666666666664]', count: 7 },
+        { bin: '[78.33333333333333, 85.66666666666667]', count: 1 },
+      ],
+    })
+    render(
+      <MemoryRouter>
+        <ColumnDetailDrawer open onOpenChange={vi.fn()} column={col} viewName="metrics" />
+      </MemoryRouter>,
+    )
+
+    const option = setOptionMock.mock.calls.at(-1)?.[0] as {
+      xAxis?: { data?: string[] }
+      tooltip?: { formatter?: (params: { dataIndex: number }[]) => string }
+    }
+    expect(option.xAxis?.data).toEqual(['(-inf, 5]', '[12.33, 19.67]', '[78.33, 85.67]'])
+    expect(option.tooltip?.formatter?.([{ dataIndex: 1 }])).toContain('[12.333333333333332, 19.666666666666664]')
+  })
+
   it('returns null without column', () => {
     const { container } = render(
       <MemoryRouter>

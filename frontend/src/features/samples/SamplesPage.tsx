@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/api/client'
 import { useDatasetProfile } from '@/hooks/useDatasetProfile'
-import { ActionInSql } from '@/components/ActionInSql'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { TBody, TD, TH, THead, TR } from '@/components/ui/table'
@@ -11,7 +10,6 @@ import { TableSkeleton } from '@/components/ui/skeleton'
 import { QueryErrorBanner } from '@/components/ui/query-error-banner'
 import { Badge } from '@/components/ui/badge'
 import { formatCount } from '@/lib/format'
-import { sqlWherePkSample } from '@/lib/sql'
 import { useUiStore } from '@/store/uiStore'
 
 const PAGE_OPTIONS = [50, 100, 250, 500] as const
@@ -41,10 +39,6 @@ export function SamplesPage() {
     for (const c of profileQ.data?.column_profiles ?? []) m[c.name] = c.semantic_type
     return m
   }, [profileQ.data])
-
-  const idCol =
-    profileQ.data?.primary_grain_key_columns[0] ??
-    profileQ.data?.entity_id_columns[0]?.name
 
   if (!activeId) {
     return (
@@ -166,22 +160,10 @@ export function SamplesPage() {
           <TBody>
             {res.rows.map((row, i) => {
               const globalIdx = (page - 1) * pageSize + i + 1
-              const pkVal = idCol ? row[idCol] : null
-              const whereSql =
-                idCol != null && pkVal != null && String(pkVal).length > 0
-                  ? sqlWherePkSample(activeId, idCol, pkVal, 50)
-                  : null
               return (
                 <TR key={i} className="group">
                   <TD className="sticky left-0 z-10 bg-[hsl(var(--bg-1))]/98 text-xs text-[hsl(var(--fg-muted))] shadow-[2px_0_8px_rgba(0,0,0,0.25)]">
-                    <div className="flex items-center gap-1.5 font-mono">
-                      {globalIdx}
-                      {whereSql && (
-                        <ActionInSql sql={whereSql} variant="ghost" size="sm" className="h-7 px-1.5 text-[10px]">
-                          SQL
-                        </ActionInSql>
-                      )}
-                    </div>
+                    <div className="font-mono">{globalIdx}</div>
                   </TD>
                   {cols.map((c) => (
                     <TD
