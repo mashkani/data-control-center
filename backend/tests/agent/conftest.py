@@ -44,7 +44,9 @@ def collect_ask_result(registry, settings, req, ollama_call=None, ollama_stream=
     ):
         typ = ev["type"]
         data = ev["data"]
-        if typ == "sql":
+        if typ == "meta":
+            payload["model"] = data.get("model")
+        elif typ == "sql":
             payload["sql"] = data.get("sql")
             payload["explanation"] = data.get("explanation")
         elif typ == "query_result":
@@ -60,4 +62,3 @@ def collect_ask_result(registry, settings, req, ollama_call=None, ollama_stream=
             if data.get("query_result") is not None:
                 payload["query_result"] = QueryResult.model_validate(data["query_result"])
     return AgentAskResponse(**payload)
-

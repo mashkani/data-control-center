@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AskComposer } from '@/features/ask/AskComposer'
@@ -13,6 +14,7 @@ vi.mock('@/api/client', async (importOriginal) => {
     api: {
       ...mod.api,
       listDatasets: vi.fn(),
+      listLlmModels: vi.fn(),
     },
   }
 })
@@ -50,6 +52,7 @@ describe('AskComposer', () => {
   beforeEach(() => {
     mockSend.mockReset()
     mockStop.mockReset()
+    localStorage.clear()
     vi.mocked(api.listDatasets).mockResolvedValue([
       {
         dataset_id: 'ds_a',
@@ -72,6 +75,15 @@ describe('AskComposer', () => {
         file_size_bytes: 1,
       },
     ])
+    vi.mocked(api.listLlmModels).mockResolvedValue({
+      default_model: 'qwen3:4b',
+      models: [
+        { name: 'qwen3:4b', modified_at: null, size: null },
+        { name: 'llama3.2:3b', modified_at: null, size: null },
+      ],
+      reachable: true,
+      detail: null,
+    })
   })
 
   it('sends on Meta+Enter with scoped dataset_ids (one dataset toggled off)', async () => {
@@ -85,9 +97,14 @@ describe('AskComposer', () => {
       bubbles: true,
     })
     await waitFor(() => expect(mockSend).toHaveBeenCalled())
-    const payload = mockSend.mock.calls[0]![0] as { question: string; datasetIds: string[] | null }
+    const payload = mockSend.mock.calls[0]![0] as {
+      question: string
+      datasetIds: string[] | null
+      model: string | null
+    }
     expect(payload.question).toBe('Hello')
     expect(payload.datasetIds).toEqual(['ds_a'])
+    expect(payload.model).toBe('qwen3:4b')
   })
 
   it('calls onStop on Escape while busy', async () => {
@@ -122,5 +139,46 @@ describe('AskComposer', () => {
     fireEvent.click(screen.getByRole('button', { name: /Ask \(stream\)/ }))
     await waitFor(() => expect(mockSend).toHaveBeenCalled())
     expect(mockSend.mock.calls[0]![0].datasetIds).toBeNull()
+  })
+
+  it('sends the selected Ollama model and saves it locally', async () => {
+    const user = userEvent.setup()
+    renderHarness(<Harness />)
+    const select = await screen.findByLabelText(/Ollama model/i)
+    await screen.findByRole('option', { name: 'llama3.2:3b' })
+    await user.selectOptions(select, 'llama3.2:3b')
+    await waitFor(() => expect(select).toHaveValue('llama3.2:3b'))
+    fireEvent.change(screen.getByPlaceholderText(/plain language/i), { target: { value: 'Q' } })
+    fireEvent.click(screen.getByRole('button', { name: /Ask \(stream\)/ }))
+    await waitFor(() => expect(mockSend).toHaveBeenCalled())
+    expect(mockSend.mock.calls[0]![0].model).toBe('llama3.2:3b')
+    expect(localStorage.getItem('dcc-ask-llm-model')).toBe('llama3.2:3b')
+  })
+
+  it('reuses a saved model when it is still installed', async () => {
+    localStorage.setItem('dcc-ask-llm-model', 'llama3.2:3b')
+    renderHarness(<Harness />)
+    await waitFor(() => expect(screen.getByLabelText(/Ollama model/i)).toHaveValue('llama3.2:3b'))
+  })
+
+  it('falls back to the default model when a saved model is stale', async () => {
+    localStorage.setItem('dcc-ask-llm-model', 'missing:model')
+    renderHarness(<Harness />)
+    await waitFor(() => expect(screen.getByLabelText(/Ollama model/i)).toHaveValue('qwen3:4b'))
+  })
+
+  it('allows Ask with the configured default when model listing is unreachable', async () => {
+    vi.mocked(api.listLlmModels).mockResolvedValue({
+      default_model: 'qwen3:4b',
+      models: [],
+      reachable: false,
+      detail: 'Could not reach local LLM endpoint.',
+    })
+    renderHarness(<Harness />)
+    await waitFor(() => expect(screen.getByLabelText(/Ollama model/i)).toHaveValue('qwen3:4b'))
+    fireEvent.change(screen.getByPlaceholderText(/plain language/i), { target: { value: 'Q' } })
+    fireEvent.click(screen.getByRole('button', { name: /Ask \(stream\)/ }))
+    await waitFor(() => expect(mockSend).toHaveBeenCalled())
+    expect(mockSend.mock.calls[0]![0].model).toBe('qwen3:4b')
   })
 })

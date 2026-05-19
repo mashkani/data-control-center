@@ -99,7 +99,7 @@ export function AskTurnCard({
 }: {
   turn: AskTurnType
   onOpenInSql: (sql: string) => void
-  onRetry?: (question: string) => void
+  onRetry?: (question: string, model?: string | null) => void
 }) {
   const attempts = adaptAttemptsToTimeline(turn.attempts ?? [])
   const stages: AskStageEntry[] =
@@ -140,7 +140,12 @@ export function AskTurnCard({
         </div>
       ) : null}
       {turn.error && onRetry ? (
-        <Button type="button" variant="outline" size="sm" onClick={() => onRetry(turn.question)}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => onRetry(turn.question, turn.model)}
+        >
           Retry
         </Button>
       ) : null}
@@ -178,7 +183,7 @@ export function StreamingAskCard({
   model: string | null
   totalMs: number | null
   onOpenInSql: (sql: string) => void
-  onRetry?: (q: string) => void
+  onRetry?: (q: string, model?: string | null) => void
 }) {
   const displayAnswer = answer || streamingPreview || ''
   return (
@@ -213,7 +218,7 @@ export function StreamingAskCard({
         </div>
       ) : null}
       {error && onRetry && !busy ? (
-        <Button type="button" variant="outline" size="sm" onClick={() => onRetry(question)}>
+        <Button type="button" variant="outline" size="sm" onClick={() => onRetry(question, model)}>
           Retry
         </Button>
       ) : null}

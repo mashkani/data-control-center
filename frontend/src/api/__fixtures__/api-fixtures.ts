@@ -9,6 +9,7 @@ import type {
   DatasetSummary,
   HealthResponse,
   JobDetail,
+  LlmModelsResponse,
   ProfileDiffResponse,
   QueryResult,
   SampleResponse,
@@ -18,6 +19,13 @@ import type {
 export const healthResponseFixture: HealthResponse = {
   status: 'ok',
   llm: { reachable: true, model: 'qwen3:4b', detail: null },
+}
+
+export const llmModelsResponseFixture: LlmModelsResponse = {
+  default_model: 'qwen3:4b',
+  models: [{ name: 'qwen3:4b', modified_at: null, size: null }],
+  reachable: true,
+  detail: null,
 }
 
 export const datasetSummaryFixture: DatasetSummary = {

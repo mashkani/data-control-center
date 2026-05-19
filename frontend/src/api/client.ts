@@ -12,6 +12,7 @@ import type {
   JobCreateResponse,
   JobDetail,
   JobSummary,
+  LlmModelsResponse,
   ProfileDiffResponse,
   ProfileHistoryEntry,
   QueryRequest,
@@ -156,6 +157,8 @@ async function fetchDatasetProfile(datasetId: string): Promise<DatasetProfile> {
 
 export const api = {
   health: () => handle<HealthResponse>(fetch(`${API}/health`)),
+
+  listLlmModels: () => handle<LlmModelsResponse>(apiFetch(`${API}/llm/models`)),
 
   listDatasets: () => handle<DatasetSummary[]>(apiFetch(`${API}/datasets`)),
 

@@ -9,6 +9,7 @@ import {
   datasetSummaryFixture,
   healthResponseFixture,
   jobDetailFixture,
+  llmModelsResponseFixture,
   profileDiffFixture,
   queryResultFixture,
   sampleResponseFixture,
@@ -32,6 +33,7 @@ import type {
   JobStatus,
   JobSummary,
   LlmHealth,
+  LlmModelsResponse,
   NullPctChange,
   ProfileDiffResponse,
   ProfileHistoryEntry,
@@ -58,6 +60,11 @@ describe('api types conformance', () => {
   it('HealthResponse fixture', () => {
     expectTypeOf(healthResponseFixture).toEqualTypeOf<HealthResponse>()
     expect(healthResponseFixture).toMatchObject({ status: 'ok' })
+  })
+
+  it('LlmModelsResponse fixture', () => {
+    expectTypeOf(llmModelsResponseFixture).toEqualTypeOf<LlmModelsResponse>()
+    expect(llmModelsResponseFixture.models[0]?.name).toBe('qwen3:4b')
   })
 
   it('DatasetSummary fixture', () => {

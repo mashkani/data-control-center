@@ -228,6 +228,38 @@ def test_ollama_chat_model_not_found_includes_hint(monkeypatch: pytest.MonkeyPat
     assert "DCC_LLM_MODEL" in msg
 
 
+def test_ollama_chat_model_not_found_uses_explicit_model_hint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = Settings(llm_base_url="http://ollama.test", llm_model="qwen3:4b")
+    req = httpx.Request("POST", "http://ollama.test/api/chat")
+
+    class FakeClient:
+        def __init__(self, *a, **k) -> None:
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def post(self, url, json=None):  # noqa: ANN001
+            assert json["model"] == "llama3.2:3b"
+            return httpx.Response(
+                404,
+                request=req,
+                json={"error": "model 'llama3.2:3b' not found"},
+            )
+
+    monkeypatch.setattr(httpx, "Client", lambda **kwargs: FakeClient())
+    with pytest.raises(httpx.HTTPStatusError) as err:
+        ollama_chat(settings, [{"role": "user", "content": "hi"}], None, "llama3.2:3b")
+    msg = str(err.value)
+    assert "model 'llama3.2:3b' not found" in msg
+    assert "ollama pull llama3.2:3b" in msg
+
+
 def test_ollama_chat_sends_generation_options(monkeypatch: pytest.MonkeyPatch) -> None:
     settings = Settings(
         llm_base_url="http://ollama.test",
@@ -518,4 +550,3 @@ def test_ollama_chat_stream_skips_blank_lines(monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr(httpx, "Client", lambda **kwargs: ClientCtx())
     settings = Settings()
     assert list(ollama_chat_stream(settings, [{"role": "user", "content": "z"}], None)) == ["hi"]
-

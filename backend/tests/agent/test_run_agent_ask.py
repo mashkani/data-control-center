@@ -62,6 +62,26 @@ def test_run_agent_happy_path(registry_csv: DatasetRegistry) -> None:
     assert len(calls) == 1
 
 
+def test_run_agent_uses_requested_model(registry_csv: DatasetRegistry) -> None:
+    settings = Settings(llm_model="qwen3:4b")
+    vw = registry_csv.list_all()[0].view_name
+    seen_models: list[str] = []
+
+    def fake_ollama(s, messages, format_schema=None):  # noqa: ANN001
+        seen_models.append(s.llm_model)
+        return f'{{"sql":"SELECT COUNT(*) AS n FROM {vw}","explanation":"count rows"}}'
+
+    out = collect_ask_result(
+        registry_csv,
+        settings,
+        AgentAskRequest(question="How many rows?", model="llama3.2:3b"),
+        ollama_call=fake_ollama,
+    )
+    assert not out.error
+    assert out.model == "llama3.2:3b"
+    assert seen_models == ["llama3.2:3b"]
+
+
 def test_run_agent_sql_retry_then_success(registry_csv: DatasetRegistry) -> None:
     settings = Settings(agent_sql_attempts=2)
 
@@ -357,4 +377,3 @@ def test_collect_ask_result_skips_history_when_disabled(registry_csv: DatasetReg
     )
     last_user = next(c["content"] for c in reversed(captured[0]) if c["role"] == "user")
     assert "Recent conversation" not in last_user
-

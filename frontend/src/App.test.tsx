@@ -27,6 +27,8 @@ vi.mock('@/api/client', () => ({
     getProfileDiff: vi.fn(),
     listSavedQueries: vi.fn(),
     listAskConversations: vi.fn(),
+    listLlmModels: vi.fn(),
+    health: vi.fn(),
   },
 }))
 
@@ -78,6 +80,16 @@ describe('App', () => {
     vi.mocked(api.getProfileHistory).mockResolvedValue([])
     vi.mocked(api.listSavedQueries).mockResolvedValue([])
     vi.mocked(api.listAskConversations).mockResolvedValue([])
+    vi.mocked(api.listLlmModels).mockResolvedValue({
+      default_model: 'qwen3:4b',
+      models: [{ name: 'qwen3:4b', modified_at: null, size: null }],
+      reachable: true,
+      detail: null,
+    })
+    vi.mocked(api.health).mockResolvedValue({
+      status: 'ok',
+      llm: { reachable: true, model: 'qwen3:4b', detail: null },
+    })
     vi.mocked(api.uploadDatasets).mockResolvedValue([])
   })
 

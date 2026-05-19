@@ -18,11 +18,13 @@ def ollama_chat(
     settings: Settings,
     messages: list[dict[str, str]],
     format_schema: dict[str, Any] | None = None,
+    model_name: str | None = None,
 ) -> str:
     """POST /api/chat; return assistant message content."""
+    model = model_name or settings.llm_model
     url = f"{settings.llm_base_url.rstrip('/')}/api/chat"
     body: dict[str, Any] = {
-        "model": settings.llm_model,
+        "model": model,
         "messages": messages,
         "stream": False,
         "think": settings.llm_think,
@@ -49,7 +51,7 @@ def ollama_chat(
                 hint = ""
                 if e.response.status_code == 404 and "not found" in detail.lower():
                     hint = (
-                        f" If the model name is wrong, run `ollama pull {settings.llm_model}` "
+                        f" If the model name is wrong, run `ollama pull {model}` "
                         "or set DCC_LLM_MODEL to a model from `ollama list`."
                     )
                 raise httpx.HTTPStatusError(
@@ -70,11 +72,13 @@ def ollama_chat_stream(
     settings: Settings,
     messages: list[dict[str, str]],
     format_schema: dict[str, Any] | None = None,
+    model_name: str | None = None,
 ) -> Iterator[str]:
     """Stream assistant content chunks from Ollama /api/chat (stream=True)."""
+    model = model_name or settings.llm_model
     url = f"{settings.llm_base_url.rstrip('/')}/api/chat"
     body: dict[str, Any] = {
-        "model": settings.llm_model,
+        "model": model,
         "messages": messages,
         "stream": True,
         "think": settings.llm_think,

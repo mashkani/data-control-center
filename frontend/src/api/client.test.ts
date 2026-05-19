@@ -62,6 +62,20 @@ describe('api client', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/health')
   })
 
+  it('listLlmModels calls /api/llm/models', async () => {
+    const body = {
+      default_model: 'qwen3:4b',
+      models: [{ name: 'qwen3:4b', modified_at: null, size: null }],
+      reachable: true,
+      detail: null,
+    }
+    const fetchMock = vi.fn().mockResolvedValue(jsonOk(body))
+    vi.stubGlobal('fetch', fetchMock)
+    await expect(api.listLlmModels()).resolves.toEqual(body)
+    expect(fetchMock).toHaveBeenCalledWith('/api/llm/models', expect.any(Object))
+    expectToken(fetchMock.mock.calls[0]![1] as RequestInit)
+  })
+
   it('throws on non-ok with message from body', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(textErr('nope')))
     await expect(api.listDatasets()).rejects.toThrow('nope')

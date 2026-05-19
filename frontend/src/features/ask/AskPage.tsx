@@ -61,7 +61,12 @@ export function AskPage() {
     return c.conversation_id
   }
 
-  const onSend = async (payload: { question: string; maxRows: number; datasetIds: string[] | null }) => {
+  const onSend = async (payload: {
+    question: string
+    maxRows: number
+    datasetIds: string[] | null
+    model: string | null
+  }) => {
     setStreamQuestion(payload.question)
     try {
       const cid = await ensureConversation()
@@ -71,14 +76,15 @@ export function AskPage() {
         max_rows: payload.maxRows || null,
         conversation_id: cid,
         use_history: true,
+        model: payload.model,
       })
     } catch (e) {
       toast.error((e as Error).message)
     }
   }
 
-  const onRetry = (q: string) => {
-    void onSend({ question: q, maxRows: 200, datasetIds: null })
+  const onRetry = (q: string, model?: string | null) => {
+    void onSend({ question: q, maxRows: 200, datasetIds: null, model: model ?? null })
   }
 
   return (

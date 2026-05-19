@@ -30,6 +30,7 @@ from app.services.agent.prompts import (
     _system_prompt,
 )
 from app.services.query import execute_query
+from app.services.llm_models import effective_llm_model
 from app.services.registry import DatasetRegistry
 
 logger = logging.getLogger(__name__)
@@ -44,7 +45,8 @@ def _run_ask_workflow(
     ollama_call=ollama_chat,
     ollama_stream=ollama_chat_stream,
 ) -> Iterator[dict[str, Any]]:
-    model_name = settings.llm_model
+    model_name = effective_llm_model(settings, req.model)
+    llm_settings = settings.model_copy(update={"llm_model": model_name})
     t0 = time.monotonic()
     attempts: list[dict[str, Any]] = []
 
@@ -89,12 +91,12 @@ def _run_ask_workflow(
             "data": {"name": "draft_sql", "attempt": attempt + 1, "elapsed_ms": elapsed_ms()},
         }
         try:
-            content = ollama_call(settings, messages, OLLAMA_SQL_DRAFT_FORMAT)
+            content = ollama_call(llm_settings, messages, OLLAMA_SQL_DRAFT_FORMAT)
         except httpx.ConnectError as e:
             logger.warning("Ollama connection failed: %s", e)
             msg = (
                 f"Ollama is not reachable at {settings.llm_base_url}. "
-                f"Start Ollama and run `ollama pull {settings.llm_model}` "
+                f"Start Ollama and run `ollama pull {model_name}` "
                 "if the model is not installed."
             )
             yield from _finish_error(
@@ -244,12 +246,12 @@ def _run_ask_workflow(
             try:
                 if emit_summary_tokens:
                     acc = ""
-                    for chunk in ollama_stream(settings, summary_messages, OLLAMA_SUMMARY_FORMAT):
+                    for chunk in ollama_stream(llm_settings, summary_messages, OLLAMA_SUMMARY_FORMAT):
                         acc += chunk
                         yield {"type": "token", "data": {"text": chunk}}
                     summary_content = acc
                 else:
-                    summary_content = ollama_call(settings, summary_messages, OLLAMA_SUMMARY_FORMAT)
+                    summary_content = ollama_call(llm_settings, summary_messages, OLLAMA_SUMMARY_FORMAT)
                 parsed_ans, serr = parse_summary_answer(summary_content)
                 answer = parsed_ans or (
                     f"{draft.explanation}\n\n(Summarization issue: {serr})".strip()

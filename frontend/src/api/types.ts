@@ -16,6 +16,19 @@ export type HealthResponse = {
   llm: LlmHealth
 }
 
+export type LlmModelInfo = {
+  name: string
+  modified_at?: string | null
+  size?: number | null
+}
+
+export type LlmModelsResponse = {
+  default_model: string
+  models: LlmModelInfo[]
+  reachable: boolean
+  detail: string | null
+}
+
 export type DatasetSummary = {
   dataset_id: string
   name: string
@@ -141,6 +154,7 @@ export type AgentAskRequest = {
   max_rows?: number | null
   conversation_id?: string | null
   use_history?: boolean
+  model?: string | null
 }
 
 export type AgentAskResponse = {

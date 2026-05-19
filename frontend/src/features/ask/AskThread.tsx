@@ -31,7 +31,7 @@ export function AskThread({
   streaming: AskCallState | null
   busy: boolean
   onOpenInSql: (sql: string) => void
-  onRetry: (q: string) => void
+  onRetry: (q: string, model?: string | null) => void
 }) {
   const threadRef = useRef<HTMLDivElement | null>(null)
   const stickToBottomRef = useRef(true)

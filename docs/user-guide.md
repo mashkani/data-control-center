@@ -89,10 +89,12 @@ Optional local LLM assistant via [Ollama](https://ollama.com).
    ollama pull qwen3:4b
    ```
 
-   For other models, set **`DCC_LLM_MODEL`** when starting the backend (see
-   [`backend/README.md`](../backend/README.md#local-llm-ask)).
-3. Keep the Ollama daemon running, then **`make dev`**. Open **Ask**, type a question,
-   and optional **max_rows** for the result preview.
+   For a different default, set **`DCC_LLM_MODEL`** when starting the backend (see
+   [`backend/README.md`](../backend/README.md#local-llm-ask)). Pulling models remains a
+   manual Ollama step; the app only lists models already installed locally.
+3. Keep the Ollama daemon running, then **`make dev`**. Open **Ask**, choose any installed
+   model from the **Ollama model** picker, type a question, and optional **max_rows** for
+   the result preview.
 
 The backend drafts a read-only **`SELECT`/`WITH`**, runs it through the same validation
 as the SQL tab, and returns a concise answer. Open generated SQL in the **SQL** tab from
@@ -101,7 +103,11 @@ the turn UI.
 **Submit / stop:** **⌘+Enter** or **Ctrl+Enter** to submit; **Esc** stops an in-flight stream.
 
 **Conversations:** Prior turns are stored in the workspace and can be resumed from the
-Ask sidebar. For REST endpoints, streaming event types, and all **`DCC_LLM_*`** /
+Ask sidebar.
+
+**HTTP API:** **`GET /api/llm/models`** lists locally installed Ollama models.
+**`POST /api/agent/ask/stream`** accepts an optional **`model`** field (defaults to
+**`DCC_LLM_MODEL`**). For streaming event types and all **`DCC_LLM_*`** /
 **`DCC_AGENT_*`** settings, see [`backend/README.md`](../backend/README.md#local-llm-ask)
 and OpenAPI.
 

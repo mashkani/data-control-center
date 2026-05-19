@@ -67,7 +67,7 @@ describe('AskTurn', () => {
     expect(toastMock.success).toHaveBeenCalledWith('SQL copied')
 
     await user.click(screen.getByRole('button', { name: 'Retry' }))
-    expect(onRetry).toHaveBeenCalledWith('Why did revenue drop?')
+    expect(onRetry).toHaveBeenCalledWith('Why did revenue drop?', 'qwen')
     write.mockRestore()
   })
 
@@ -145,6 +145,6 @@ describe('AskTurn', () => {
     expect(screen.getByText('query broke')).toBeInTheDocument()
     expect(screen.getByText('final answer')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Retry' }))
-    expect(onRetry).toHaveBeenCalledWith('Show revenue trend')
+    expect(onRetry).toHaveBeenCalledWith('Show revenue trend', null)
   })
 })

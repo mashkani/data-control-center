@@ -16,6 +16,23 @@ class LlmHealth(BaseModel):
     detail: str | None = None
 
 
+class LlmModelInfo(BaseModel):
+    """A locally installed Ollama model as reported by /api/tags."""
+
+    name: str
+    modified_at: str | None = None
+    size: int | None = None
+
+
+class LlmModelsResponse(BaseModel):
+    """Local Ollama model listing for Ask model selection."""
+
+    default_model: str
+    models: list[LlmModelInfo] = Field(default_factory=list)
+    reachable: bool
+    detail: str | None = None
+
+
 class HealthResponse(BaseModel):
     status: str = "ok"
     llm: LlmHealth
@@ -252,6 +269,7 @@ class AgentAskRequest(BaseModel):
     max_rows: int | None = Field(default=None, ge=1, le=100_000)
     conversation_id: str | None = Field(default=None)
     use_history: bool = Field(default=True)
+    model: str | None = Field(default=None, min_length=1, max_length=200)
 
 
 class AgentSqlDraft(BaseModel):

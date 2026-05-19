@@ -42,6 +42,7 @@ const h = vi.hoisted(() => ({
   createAskConversation: vi.fn(),
   listAskTurns: vi.fn(),
   listDatasets: vi.fn(),
+  listLlmModels: vi.fn(),
   fetchDatasetProfile: vi.fn(),
   health: vi.fn(),
 }))
@@ -57,6 +58,7 @@ vi.mock('@/api/client', async (importOriginal) => {
       createAskConversation: h.createAskConversation,
       listAskTurns: h.listAskTurns,
       listDatasets: h.listDatasets,
+      listLlmModels: h.listLlmModels,
       fetchDatasetProfile: h.fetchDatasetProfile,
       health: h.health,
     },
@@ -97,6 +99,12 @@ describe('AskPage', () => {
     })
     h.listAskTurns.mockResolvedValue([])
     h.listDatasets.mockResolvedValue([])
+    h.listLlmModels.mockResolvedValue({
+      default_model: 'qwen3:4b',
+      models: [{ name: 'qwen3:4b', modified_at: null, size: null }],
+      reachable: true,
+      detail: null,
+    })
     h.fetchDatasetProfile.mockResolvedValue(minimalProfile)
     h.health.mockResolvedValue({
       status: 'ok',
@@ -179,10 +187,12 @@ describe('AskPage', () => {
       question: string
       conversation_id?: string
       use_history?: boolean
+      model?: string | null
     }
     expect(arg.question).toBe('How many rows?')
     expect(arg.conversation_id).toBe('c_test')
     expect(arg.use_history).toBe(true)
+    expect(arg.model).toBe('qwen3:4b')
     await user.click(screen.getByRole('button', { name: 'Open in SQL' }))
     expect(useUiStore.getState().pendingQuery).toBe('SELECT COUNT(*) AS n FROM t')
   })
@@ -221,7 +231,7 @@ describe('AskPage', () => {
     wrap(<AskPage />)
     await user.type(screen.getByPlaceholderText(/plain language/i), 'x')
     await user.click(screen.getByRole('button', { name: /Ask \(stream\)/i }))
-    await waitFor(() => expect(screen.getByText(/Ollama/)).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Could not reach Ollama')).toBeInTheDocument())
   })
 
   it('shows SQL block without explanation', async () => {
