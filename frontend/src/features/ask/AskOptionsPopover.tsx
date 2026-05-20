@@ -107,7 +107,7 @@ export function AskOptionsPopover({
       side="top"
       sideOffset={8}
       collisionPadding={12}
-      className="w-[min(20rem,calc(100vw-2rem))] space-y-4 p-3"
+      className="w-[min(22rem,calc(100vw-2rem))] space-y-4 rounded-2xl border-white/10 bg-[#242528] p-3 text-white shadow-2xl"
     >
       <section
         ref={focusSection === 'model' ? focusRef : undefined}
@@ -116,7 +116,7 @@ export function AskOptionsPopover({
       >
         <label
           htmlFor="dcc-ask-model"
-          className="mb-1.5 block text-[10px] font-medium uppercase tracking-wider text-fg-muted"
+          className="mb-1.5 block text-[10px] font-medium uppercase tracking-wider text-white/45"
         >
           Model
         </label>
@@ -130,7 +130,7 @@ export function AskOptionsPopover({
             }}
             disabled={busy || !llmModels}
             aria-label="Ollama model"
-            className="h-8 w-full appearance-none rounded-md border border-border-default bg-black/30 py-1 pl-2 pr-8 text-sm text-white disabled:opacity-60"
+            className="h-9 w-full appearance-none rounded-xl border border-white/10 bg-black/30 py-1 pl-2 pr-8 text-sm text-white disabled:opacity-60"
           >
             {modelOptions.length ? (
               modelOptions.map((name) => (
@@ -163,7 +163,7 @@ export function AskOptionsPopover({
           content="Max rows for the generated SQL preview (bounded by the server)."
           className="max-w-xs text-xs"
         >
-          <label htmlFor="dcc-ask-max-rows" className="mb-1.5 block text-[10px] font-medium uppercase tracking-wider text-fg-muted">
+          <label htmlFor="dcc-ask-max-rows" className="mb-1.5 block text-[10px] font-medium uppercase tracking-wider text-white/45">
             Max rows in preview
           </label>
         </Tooltip>
@@ -182,8 +182,8 @@ export function AskOptionsPopover({
           className={cn(focusSection === 'scope' && 'rounded-md ring-1 ring-border-accent')}
           data-focus={focusSection === 'scope' ? 'true' : undefined}
         >
-          <div className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-fg-muted">Dataset scope</div>
-          <label className="mb-2 flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 hover:bg-white/5">
+          <div className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-white/45">Dataset scope</div>
+          <label className="mb-2 flex cursor-pointer items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-white/5">
             <input
               type="checkbox"
               checked={allChecked}
@@ -197,7 +197,7 @@ export function AskOptionsPopover({
               <li key={d.dataset_id}>
                 <label
                   className={cn(
-                    'flex cursor-pointer items-start gap-2 rounded-md px-1 py-1 hover:bg-white/5',
+                    'flex cursor-pointer items-start gap-2 rounded-xl px-2 py-1.5 hover:bg-white/5',
                     !isDatasetChecked(d.dataset_id) && !allChecked && 'opacity-70',
                   )}
                 >
@@ -211,7 +211,7 @@ export function AskOptionsPopover({
                     <span className="block truncate text-sm" title={d.name}>
                       {truncateName(d.name)}
                     </span>
-                    <span className="block truncate font-mono text-[10px] text-fg-muted">{d.dataset_id}</span>
+                    <span className="block truncate font-mono text-[10px] text-white/40">{d.dataset_id}</span>
                   </span>
                 </label>
               </li>

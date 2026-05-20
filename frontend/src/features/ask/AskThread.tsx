@@ -7,7 +7,7 @@ import type { AskCallState } from '@/hooks/useAskStream'
 
 const NEAR_BOTTOM_PX = 96
 /** Extra scroll padding so the last bubble clears the composer/footer */
-const THREAD_BOTTOM_PADDING = 'pb-32'
+const THREAD_BOTTOM_PADDING = 'pb-40'
 
 function isNearBottom(el: HTMLDivElement): boolean {
   return el.scrollHeight - el.scrollTop - el.clientHeight <= NEAR_BOTTOM_PX
@@ -124,7 +124,7 @@ export function AskThread({
         ref={threadRef}
         data-testid="ask-thread-scroll"
         onScroll={onScroll}
-        className={`flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto pr-1 ${THREAD_BOTTOM_PADDING}`}
+        className={`flex min-h-0 flex-1 flex-col items-center gap-5 overflow-y-auto px-4 pt-3 ${THREAD_BOTTOM_PADDING}`}
       >
         {turns.map((t) => (
           <AskTurnCard
@@ -161,7 +161,7 @@ export function AskThread({
             type="button"
             size="sm"
             variant="secondary"
-            className="pointer-events-auto shadow-md"
+            className="pointer-events-auto rounded-full border border-white/10 bg-[#2b2b2d] text-white shadow-xl hover:bg-[#343437]"
             onClick={() => {
               stickToBottomRef.current = true
               setShowJumpToLatest(false)

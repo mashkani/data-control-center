@@ -52,35 +52,35 @@ function SqlBlock({
   )
 
   return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-xs font-semibold text-fg-muted">Generated SQL</span>
-        <div className="flex gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={() => onOpenInSql(sql)}>
-            Open in SQL
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => onOpenInSql(stripTrailingLimit(sql))}
-          >
-            Open without LIMIT
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              void navigator.clipboard.writeText(displaySql)
-              toast.success('SQL copied')
-            }}
-          >
-            Copy
-          </Button>
-        </div>
+    <details open className="group rounded-2xl border border-white/10 bg-black/20">
+      <summary className="cursor-pointer list-none px-4 py-3 marker:hidden">
+        <span className="text-xs font-medium text-white/55">Generated SQL</span>
+      </summary>
+      <div className="flex flex-wrap gap-2 border-t border-white/10 px-4 pb-3">
+        <Button type="button" variant="outline" size="sm" onClick={() => onOpenInSql(sql)}>
+          Open in SQL
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => onOpenInSql(stripTrailingLimit(sql))}
+        >
+          Open without LIMIT
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            void navigator.clipboard.writeText(displaySql)
+            toast.success('SQL copied')
+          }}
+        >
+          Copy
+        </Button>
       </div>
-      <div className="overflow-hidden rounded-lg border border-border-default">
+      <div className="overflow-hidden border-t border-white/10">
         <CodeMirror
           value={displaySql}
           height="120px"
@@ -91,7 +91,7 @@ function SqlBlock({
           basicSetup={{ lineNumbers: true, foldGutter: false }}
         />
       </div>
-    </div>
+    </details>
   )
 }
 
@@ -124,7 +124,7 @@ function TurnMetaSummary({
     attemptCount > 0 ? attemptLabel : null,
     elapsedMs != null ? formatElapsedMs(elapsedMs) : null,
   ].filter(Boolean)
-  return <div className="text-[10px] text-fg-muted">{parts.join(' · ')}</div>
+  return <div className="text-[10px] text-white/40">{parts.join(' · ')}</div>
 }
 
 function TurnActionToolbar({
@@ -143,25 +143,25 @@ function TurnActionToolbar({
   onAnchor: () => void
 }) {
   return (
-    <div className="flex flex-wrap gap-1">
+    <div className="flex flex-wrap gap-1 text-white/50">
       {answer ? (
         <>
-          <Button type="button" variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs" onClick={onCopyAnswer}>
+          <Button type="button" variant="ghost" size="sm" className="h-7 gap-1 rounded-full px-2 text-xs text-white/55 hover:bg-white/10 hover:text-white" onClick={onCopyAnswer}>
             <Copy className="h-3 w-3" />
             Copy answer
           </Button>
-          <Button type="button" variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs" onClick={onCopyMarkdown}>
+          <Button type="button" variant="ghost" size="sm" className="h-7 gap-1 rounded-full px-2 text-xs text-white/55 hover:bg-white/10 hover:text-white" onClick={onCopyMarkdown}>
             Copy markdown
           </Button>
         </>
       ) : null}
       {onRegenerate ? (
-        <Button type="button" variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs" onClick={onRegenerate}>
+        <Button type="button" variant="ghost" size="sm" className="h-7 gap-1 rounded-full px-2 text-xs text-white/55 hover:bg-white/10 hover:text-white" onClick={onRegenerate}>
           <RefreshCw className="h-3 w-3" />
           Regenerate
         </Button>
       ) : null}
-      <Button type="button" variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs" onClick={onAnchor}>
+      <Button type="button" variant="ghost" size="sm" className="h-7 gap-1 rounded-full px-2 text-xs text-white/55 hover:bg-white/10 hover:text-white" onClick={onAnchor}>
         <Link2 className="h-3 w-3" />
         Anchor
       </Button>
@@ -170,7 +170,7 @@ function TurnActionToolbar({
           type="button"
           variant="ghost"
           size="sm"
-          className="h-7 gap-1 px-2 text-xs text-fg-muted hover:text-[hsl(var(--status-error))]"
+          className="h-7 gap-1 rounded-full px-2 text-xs text-white/45 hover:bg-white/10 hover:text-[hsl(var(--status-error))]"
           onClick={onDelete}
         >
           <Trash2 className="h-3 w-3" />
@@ -212,12 +212,14 @@ export function AskTurnCard({
   }
 
   return (
-    <div
-      id={`turn-${turn.turn_id}`}
-      className="scroll-mt-4 space-y-3 rounded-xl border border-border-default bg-white/[0.04] p-4"
-    >
-      <div className="space-y-1.5">
-        <div className="rounded-lg bg-black/25 px-3 py-2 text-sm text-white/95">{turn.question}</div>
+    <div id={`turn-${turn.turn_id}`} className="w-full max-w-5xl scroll-mt-4 space-y-3">
+      <div className="flex justify-end">
+        <div className="max-w-[min(42rem,90%)] rounded-[1.35rem] bg-[#2f3033] px-4 py-3 text-sm leading-6 text-white/95 shadow-[0_10px_40px_rgba(0,0,0,0.22)]">
+          {turn.question}
+        </div>
+      </div>
+
+      <div className="space-y-3 rounded-[1.6rem] border border-white/10 bg-white/[0.035] p-4 shadow-[0_18px_70px_rgba(0,0,0,0.22)]">
         <TurnMetaSummary
           model={turn.model}
           attemptCount={attempts.length}
@@ -237,39 +239,43 @@ export function AskTurnCard({
           onDelete={onDelete ? () => onDelete(turn.turn_id) : undefined}
           onAnchor={anchorTurn}
         />
-      </div>
-      {showDebugTimeline ? (
-        <AskStageTimeline
-          stages={stages}
-          sqlAttempts={attempts}
-          totalMs={turn.elapsed_ms ?? null}
-          busy={false}
-        />
-      ) : null}
-      {turn.error ? <QueryErrorBanner message={turn.error} /> : null}
-      {turn.sql ? <SqlBlock sql={turn.sql} onOpenInSql={onOpenInSql} /> : null}
-      {turn.query_result && !turn.query_result.error ? (
-        <AskResultTable queryResult={turn.query_result} />
-      ) : null}
-      {turn.query_result?.error ? <QueryErrorBanner message={turn.query_result.error} /> : null}
-      {displayAnswer ? (
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-wider text-fg-muted">Answer</div>
-          <div className="prose prose-invert prose-sm mt-2 max-w-none [&_p]:my-2 [&_ul]:my-2">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayAnswer}</ReactMarkdown>
+
+        {showDebugTimeline ? (
+          <AskStageTimeline
+            stages={stages}
+            sqlAttempts={attempts}
+            totalMs={turn.elapsed_ms ?? null}
+            busy={false}
+          />
+        ) : null}
+        {turn.error ? <QueryErrorBanner message={turn.error} /> : null}
+        {turn.sql ? <SqlBlock sql={turn.sql} onOpenInSql={onOpenInSql} /> : null}
+        {turn.query_result && !turn.query_result.error ? (
+          <div className="overflow-hidden rounded-2xl border border-white/10">
+            <AskResultTable queryResult={turn.query_result} />
           </div>
-        </div>
-      ) : null}
-      {turn.error && onRetry ? (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => onRetry(turn.question, turn.model)}
-        >
-          Retry
-        </Button>
-      ) : null}
+        ) : null}
+        {turn.query_result?.error ? <QueryErrorBanner message={turn.query_result.error} /> : null}
+        {displayAnswer ? (
+          <div className="rounded-2xl bg-black/15 px-4 py-3">
+            <div className="text-xs font-medium uppercase tracking-wider text-white/40">Answer</div>
+            <div className="prose prose-invert prose-sm mt-2 max-w-none text-white/90 [&_p]:my-2 [&_ul]:my-2">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayAnswer}</ReactMarkdown>
+            </div>
+          </div>
+        ) : null}
+        {turn.error && onRetry ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="rounded-full border-white/10 bg-white/[0.04]"
+            onClick={() => onRetry(turn.question, turn.model)}
+          >
+            Retry
+          </Button>
+        ) : null}
+      </div>
     </div>
   )
 }
@@ -308,46 +314,52 @@ export function StreamingAskCard({
   const displayAnswer = answer || streamingPreview || ''
   const showModelNote = shouldShowStreamingModelNote(explanation, answer)
   return (
-    <div
-      className="space-y-3 rounded-xl border border-border-default border-dashed bg-white/[0.06] p-4"
-      aria-busy={busy}
-    >
-      <div className="space-y-1.5">
-        <div className="rounded-lg bg-black/25 px-3 py-2 text-sm text-white/95">{question}</div>
+    <div className="w-full max-w-5xl space-y-3" aria-busy={busy}>
+      <div className="flex justify-end">
+        <div className="max-w-[min(42rem,90%)] rounded-[1.35rem] bg-[#2f3033] px-4 py-3 text-sm leading-6 text-white/95 shadow-[0_10px_40px_rgba(0,0,0,0.22)]">
+          {question}
+        </div>
+      </div>
+      <div className="space-y-3 rounded-[1.6rem] border border-dashed border-white/15 bg-white/[0.05] p-4 shadow-[0_18px_70px_rgba(0,0,0,0.22)]">
         {model ? (
           <TurnMetaSummary model={model} attemptCount={0} elapsedMs={totalMs} />
         ) : null}
-      </div>
-      {(busy || stages.length > 0) && (
-        <AskStageTimeline stages={stages} sqlAttempts={sqlAttempts} totalMs={totalMs} busy={busy} />
-      )}
-      {showModelNote ? (
-        <div>
-          <div className="text-xs font-semibold text-fg-muted">Model note</div>
-          <p className="mt-1 text-sm text-white/90">{explanation}</p>
-        </div>
-      ) : null}
-      {error ? <QueryErrorBanner message={error} /> : null}
-      {sql ? <SqlBlock sql={sql} onOpenInSql={onOpenInSql} /> : null}
-      {queryResult && !queryResult.error ? <AskResultTable queryResult={queryResult} /> : null}
-      {queryResult?.error ? <QueryErrorBanner message={queryResult.error} /> : null}
-      {displayAnswer ? (
-        <div
-          role="region"
-          aria-live="polite"
-          className="rounded-lg border border-border-default/50 bg-black/20 p-3"
-        >
-          <div className="text-xs font-semibold uppercase tracking-wider text-fg-muted">Answer</div>
-          <div className="prose prose-invert prose-sm mt-2 max-w-none [&_p]:my-2 [&_ul]:my-2">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayAnswer}</ReactMarkdown>
+
+        {(busy || stages.length > 0) && (
+          <AskStageTimeline stages={stages} sqlAttempts={sqlAttempts} totalMs={totalMs} busy={busy} />
+        )}
+        {showModelNote ? (
+          <div className="rounded-2xl bg-black/15 px-4 py-3">
+            <div className="text-xs font-medium text-white/40">Model note</div>
+            <p className="mt-1 text-sm text-white/90">{explanation}</p>
           </div>
-        </div>
-      ) : null}
-      {error && onRetry && !busy ? (
-        <Button type="button" variant="outline" size="sm" onClick={() => onRetry(question, model)}>
-          Retry
-        </Button>
-      ) : null}
+        ) : null}
+        {error ? <QueryErrorBanner message={error} /> : null}
+        {sql ? <SqlBlock sql={sql} onOpenInSql={onOpenInSql} /> : null}
+        {queryResult && !queryResult.error ? (
+          <div className="overflow-hidden rounded-2xl border border-white/10">
+            <AskResultTable queryResult={queryResult} />
+          </div>
+        ) : null}
+        {queryResult?.error ? <QueryErrorBanner message={queryResult.error} /> : null}
+        {displayAnswer ? (
+          <div
+            role="region"
+            aria-live="polite"
+            className="rounded-2xl border border-white/10 bg-black/20 p-4"
+          >
+            <div className="text-xs font-medium uppercase tracking-wider text-white/40">Answer</div>
+            <div className="prose prose-invert prose-sm mt-2 max-w-none text-white/90 [&_p]:my-2 [&_ul]:my-2">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayAnswer}</ReactMarkdown>
+            </div>
+          </div>
+        ) : null}
+        {error && onRetry && !busy ? (
+          <Button type="button" variant="outline" size="sm" className="rounded-full border-white/10 bg-white/[0.04]" onClick={() => onRetry(question, model)}>
+            Retry
+          </Button>
+        ) : null}
+      </div>
     </div>
   )
 }

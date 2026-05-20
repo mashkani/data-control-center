@@ -36,7 +36,7 @@ export function AskContextBar({
 
   return (
     <div
-      className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border-default/60 px-1 py-2"
+      className="mx-auto flex w-full max-w-5xl shrink-0 flex-wrap items-center gap-2 px-4 py-3 text-white/60"
       data-testid="ask-context-bar"
     >
       {showChatsButton && onOpenChats ? (
@@ -44,7 +44,7 @@ export function AskContextBar({
           type="button"
           variant="outline"
           size="sm"
-          className="gap-1 md:hidden"
+          className="gap-1 rounded-full border-white/10 bg-white/[0.04] text-white/70 hover:bg-white/10 md:hidden"
           onClick={onOpenChats}
         >
           <MessageSquare className="h-3.5 w-3.5" />
@@ -80,7 +80,7 @@ export function AskContextBar({
       ) : null}
 
       {profileUpdatedAt != null ? (
-        <span className="text-[10px] text-fg-muted">
+        <span className="text-[10px] text-white/40">
           Profile {formatRelativeTime(profileUpdatedAt)}
         </span>
       ) : null}
@@ -90,7 +90,7 @@ export function AskContextBar({
           type="button"
           variant="ghost"
           size="sm"
-          className="ml-auto h-7 gap-1 text-xs"
+          className="ml-auto h-7 gap-1 rounded-full text-xs text-white/50 hover:bg-white/10 hover:text-white"
           disabled={refreshDisabled}
           onClick={onRefreshProfile}
         >
@@ -103,6 +103,6 @@ export function AskContextBar({
 }
 
 const chipClass = cn(
-  'rounded-full border border-border-default bg-black/20 px-2 py-0.5',
-  'text-[11px] text-fg-muted hover:bg-white/10 hover:text-fg',
+  'rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1',
+  'text-[11px] text-white/55 hover:bg-white/10 hover:text-white',
 )

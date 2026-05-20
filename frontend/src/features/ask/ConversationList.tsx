@@ -62,25 +62,25 @@ function ConversationRow({
   return (
     <div
       className={cn(
-        'group relative rounded-lg border border-transparent focus-within:border-border-default',
-        active && 'border-border-accent bg-white/10',
+        'group relative rounded-xl border border-transparent focus-within:border-white/20',
+        active && 'border-white/12 bg-white/[0.08]',
       )}
       onMouseEnter={() => setHovered(true)}
       onFocus={() => setHovered(true)}
     >
       <button
         type="button"
-        className="w-full rounded-lg px-2 py-2 pr-14 text-left text-sm hover:bg-white/5"
+        className="w-full rounded-xl px-2.5 py-2.5 pr-14 text-left text-sm text-white/85 transition hover:bg-white/[0.06]"
         onClick={onSelect}
       >
         <div className="flex items-center gap-1.5">
           <span className="min-w-0 flex-1 truncate font-medium">{conversation.title}</span>
           {status === 'error' ? (
-            <span className="shrink-0 rounded-full bg-red-500/20 px-1.5 py-0 text-[9px] font-medium text-red-200">
+            <span className="shrink-0 rounded-full bg-red-500/15 px-1.5 py-0 text-[9px] font-medium text-red-200">
               Error
             </span>
           ) : status === 'ok' ? (
-            <span className="shrink-0 rounded-full bg-emerald-500/15 px-1.5 py-0 text-[9px] font-medium text-emerald-200/90">
+            <span className="shrink-0 rounded-full bg-emerald-500/10 px-1.5 py-0 text-[9px] font-medium text-emerald-200/80">
               OK
             </span>
           ) : null}
@@ -95,7 +95,7 @@ function ConversationRow({
           {datasetChips.map((label) => (
             <span
               key={label}
-              className="max-w-[5rem] truncate rounded border border-border-default/60 bg-black/20 px-1 text-[9px] text-fg-muted"
+              className="max-w-[5rem] truncate rounded-md border border-white/10 bg-black/20 px-1 text-[9px] text-white/45"
               title={label}
             >
               {label}
@@ -108,7 +108,7 @@ function ConversationRow({
           type="button"
           variant="ghost"
           size="icon"
-          className="h-7 w-7"
+          className="h-7 w-7 rounded-lg text-white/45 hover:bg-white/10 hover:text-white"
           aria-label="Rename conversation"
           onClick={onRename}
         >
@@ -118,7 +118,7 @@ function ConversationRow({
           type="button"
           variant="ghost"
           size="icon"
-          className="h-7 w-7 text-fg-muted hover:text-[hsl(var(--status-error))]"
+          className="h-7 w-7 rounded-lg text-white/45 hover:bg-white/10 hover:text-[hsl(var(--status-error))]"
           aria-label="Delete conversation"
           onClick={onDelete}
         >
@@ -196,9 +196,9 @@ export function ConversationList({
 
   const listContent = (
     <>
-      <div className="mb-2 flex items-center justify-between gap-2">
+      <div className="mb-4 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-fg-muted">Conversations</h2>
+          <h2 className="text-sm font-medium text-white/90">Chats</h2>
           <Tooltip
             content="Chats are saved in the workspace DB. Follow-up questions reuse recent turns for context."
             className="max-w-xs text-xs"
@@ -215,28 +215,29 @@ export function ConversationList({
         <Button
           type="button"
           size="sm"
-          variant="outline"
-          className="gap-1"
+          variant="ghost"
+          className="h-8 gap-1 rounded-lg px-2 text-white/85 hover:bg-white/10"
+          aria-label="New"
           onClick={() => createMut.mutate()}
           disabled={createMut.isPending}
         >
           <MessageSquarePlus className="h-3.5 w-3.5" />
-          New
+          New chat
         </Button>
       </div>
 
-      <div className="relative mb-2">
+      <div className="relative mb-3">
         <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-muted" />
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search chats…"
-          className="h-8 pl-7 text-xs"
+          className="h-9 rounded-xl border-white/10 bg-white/[0.04] pl-7 text-xs text-white placeholder:text-white/40"
           aria-label="Search conversations"
         />
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
+      <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto pr-1">
         {isLoading ? <div className="text-xs text-fg-muted">Loading...</div> : null}
         {filtered.map((c) =>
           editing === c.conversation_id ? (
@@ -272,7 +273,7 @@ export function ConversationList({
           ),
         )}
         {!isLoading && filtered.length === 0 ? (
-          <p className="px-1 text-xs text-fg-muted">No conversations match your search.</p>
+          <p className="px-1 text-xs text-white/45">No conversations match your search.</p>
         ) : null}
       </div>
     </>
@@ -283,7 +284,7 @@ export function ConversationList({
       open={mobileOpen}
       onOpenChange={setMobileOpen}
       title="Ask conversations"
-      className="left-0 right-auto w-[min(100vw,20rem)] max-w-none border-l border-r-0"
+      className="left-0 right-auto w-[min(100vw,20rem)] max-w-none border-l border-r-0 bg-[#191b20]"
     >
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{listContent}</div>
     </Sheet>
@@ -325,7 +326,7 @@ export function ConversationList({
 
   return (
     <>
-      <aside className="hidden h-full min-h-0 w-56 shrink-0 flex-col border-r border-border-default pr-3 md:flex">
+      <aside className="hidden h-full min-h-0 w-[19rem] shrink-0 flex-col border-r border-white/10 bg-[#1f232b] px-3 py-4 md:flex">
         {listContent}
       </aside>
       {sheet}

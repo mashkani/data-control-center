@@ -164,7 +164,7 @@ describe('AskPage', () => {
   it('shows hero on first visit without turns', async () => {
     wrap(<AskPage />)
     await waitFor(() => expect(screen.getByTestId('ask-hero')).toBeInTheDocument())
-    expect(screen.getByText('Ask your data')).toBeInTheDocument()
+    expect(screen.getByText('What should we ask?')).toBeInTheDocument()
   })
 
   it('lists dataset name in scope options when datasets exist', async () => {
@@ -187,7 +187,7 @@ describe('AskPage', () => {
     await waitFor(() => expect(screen.getByText('a.csv')).toBeInTheDocument())
   })
 
-  it('shows suggested prompts even when turns exist', async () => {
+  it('does not show prompt suggestions when turns exist', async () => {
     h.listAskTurns.mockResolvedValue([
       {
         turn_id: 't1',
@@ -200,7 +200,8 @@ describe('AskPage', () => {
     ])
     useUiStore.setState({ activeConversationId: 'c1', activeDatasetId: 'ds_001' })
     wrap(<AskPage />)
-    await waitFor(() => expect(screen.getByRole('button', { name: /How many rows/i })).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Old?')).toBeInTheDocument())
+    expect(screen.queryByTestId('suggested-prompts')).not.toBeInTheDocument()
   })
 
   it('does not show removed static info copy', async () => {
@@ -342,7 +343,7 @@ describe('AskPage', () => {
     expect(screen.queryByText(/Model note/i)).not.toBeInTheDocument()
   })
 
-  it('shows follow-ups after a completed turn with profile', async () => {
+  it('does not show follow-up suggestions after a completed turn', async () => {
     useUiStore.setState({ activeConversationId: 'c1', activeDatasetId: 'ds_001' })
     h.listAskTurns.mockResolvedValue([
       {
@@ -364,7 +365,8 @@ describe('AskPage', () => {
       },
     ])
     wrap(<AskPage />)
-    await waitFor(() => expect(screen.getByTestId('ask-follow-ups')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('There are 10 rows.')).toBeInTheDocument())
+    expect(screen.queryByTestId('ask-follow-ups')).not.toBeInTheDocument()
   })
 
   it('shows query_result error banner', async () => {

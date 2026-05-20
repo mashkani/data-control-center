@@ -61,9 +61,9 @@ Prefer **`useDatasetProfile`** (or **`api.fetchDatasetProfile`**) for profile lo
 handles **`PROFILE_NOT_READY`** by polling **`details.job_id`**. Manual refresh uses
 **`api.refreshProfile`** and job polling before invalidating profile-related keys.
 
-**Ask** uses **`askAgentStream`** (SSE) only. First-run **AskHero**, **AskContextBar**,
-conversation search/auto-title, follow-up chips, per-turn actions, and **SqlResultsGrid** for
-in-turn previews live under `src/features/ask/`.
+**Ask** uses **`askAgentStream`** (SSE) only. The Codex-inspired Ask workspace,
+first-run **AskHero**, **AskContextBar**, conversation rail search/auto-title, per-turn
+actions, and **SqlResultsGrid** for in-turn previews live under `src/features/ask/`.
 Profiles are **v4**-shaped (`entity_id_columns`,
 `primary_grain_key_columns`, `primary_temporal_column`, etc.).
 

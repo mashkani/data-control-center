@@ -4,20 +4,18 @@ import { toast } from 'sonner'
 import { PageContainer } from '@/components/ui/section'
 import { AskComposer } from '@/features/ask/AskComposer'
 import { AskContextBar } from '@/features/ask/AskContextBar'
-import { AskFollowUps } from '@/features/ask/AskFollowUps'
 import { AskHero } from '@/features/ask/AskHero'
 import { LlmStatusBanner } from '@/features/ask/LlmStatusBanner'
 import { AskThread } from '@/features/ask/AskThread'
 import { AskThreadSkeleton } from '@/features/ask/AskThreadSkeleton'
 import { ConversationList } from '@/features/ask/ConversationList'
-import { SuggestedPrompts } from '@/features/ask/SuggestedPrompts'
 import {
   DEFAULT_CONVERSATION_TITLE,
   deriveConversationTitle,
   deserializeAskScope,
   type AskOptionsFocus,
 } from '@/features/ask/askComposerState'
-import { buildFollowUps, isPersistedStreamingTurn } from '@/features/ask/askTurnDisplay'
+import { isPersistedStreamingTurn } from '@/features/ask/askTurnDisplay'
 import { useAskStream } from '@/hooks/useAskStream'
 import { useDatasetProfile } from '@/hooks/useDatasetProfile'
 import { useOpenInSql } from '@/hooks/useOpenInSql'
@@ -60,7 +58,7 @@ export function AskPage() {
     enabled: !!activeConversationId,
   })
 
-  const { data: profile, dataUpdatedAt: profileUpdatedAt, refresh: refreshProfile, isPendingProfile } =
+  const { dataUpdatedAt: profileUpdatedAt, refresh: refreshProfile, isPendingProfile } =
     useDatasetProfile(activeDatasetId)
 
   const { data: datasets = [] } = useQuery({ queryKey: ['datasets'], queryFn: api.listDatasets })
@@ -176,17 +174,6 @@ export function AskPage() {
     [mergedTurns],
   )
 
-  const lastTurnForFollowUps = useMemo(() => {
-    if (showStreaming || busy) return null
-    const persisted = [...turns].reverse().find((t) => t.answer || t.sql)
-    return persisted ?? null
-  }, [turns, showStreaming, busy])
-
-  const followUps = useMemo(
-    () => (lastTurnForFollowUps && profile ? buildFollowUps(lastTurnForFollowUps, profile) : []),
-    [lastTurnForFollowUps, profile],
-  )
-
   const ensureConversation = async () => {
     if (activeConversationId) return activeConversationId
     const c = await api.createAskConversation({})
@@ -239,15 +226,20 @@ export function AskPage() {
     'model…'
 
   return (
-    <PageContainer className="flex h-full min-h-0 flex-col space-y-0 overflow-hidden">
-      <div className="flex h-full min-h-0 flex-1 flex-col gap-3 overflow-hidden md:flex-row md:items-stretch">
+    <PageContainer className="flex h-full min-h-[calc(100vh-8rem)] flex-col space-y-0 overflow-hidden !p-0">
+      <div className="flex h-full min-h-0 flex-1 overflow-hidden bg-[#101113] text-white md:rounded-none">
         <ConversationList
           mobileOpen={conversationsMobileOpen}
           onMobileOpenChange={setConversationsMobileOpen}
           hideMobileTrigger
         />
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <div
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.07),transparent_32rem)]"
+            aria-hidden
+          />
+
           <LlmStatusBanner />
 
           <AskContextBar
@@ -264,13 +256,11 @@ export function AskPage() {
             onOpenChats={() => setConversationsMobileOpen(true)}
           />
 
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden">
             {turnsLoading && activeConversationId ? <AskThreadSkeleton /> : null}
 
             {showHero ? (
               <AskHero
-                profile={profile}
-                onPickPrompt={setComposerText}
                 onStartNewChat={() => createConversationMut.mutate()}
               />
             ) : (
@@ -293,19 +283,6 @@ export function AskPage() {
                 }}
               />
             )}
-
-            {!showHero && followUps.length > 0 ? (
-              <AskFollowUps prompts={followUps} onPick={setComposerText} />
-            ) : null}
-
-            {!showHero && profile ? (
-              <SuggestedPrompts
-                profile={profile}
-                onPick={setComposerText}
-                collapsed={mergedTurns.length > 0}
-                compact
-              />
-            ) : null}
 
             <AskComposer
               key={prefsKey}

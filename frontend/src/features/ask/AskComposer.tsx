@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { History, Settings2, Sparkles, Terminal } from 'lucide-react'
+import { ArrowUp, History, Settings2, Square, Terminal } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -195,12 +195,12 @@ export function AskComposer({
         if (!open) onOptionsFocusChange(null)
       }}
     >
-      <div className="sticky bottom-0 z-10 shrink-0 border-t border-border-default bg-surface-1/95 pb-3 pt-3 backdrop-blur md:pt-2">
-        <div className="space-y-2">
+      <div className="sticky bottom-0 z-20 shrink-0 px-3 pb-4 pt-3">
+        <div className="mx-auto w-full max-w-5xl rounded-[2rem] border border-white/10 bg-[#2b2b2d]/95 p-3 shadow-[0_24px_90px_rgba(0,0,0,0.45)] backdrop-blur-xl">
           {looksLikeSql(question) ? (
-            <p className="text-[11px] text-fg-muted">
+            <p className="mb-2 px-2 text-[11px] text-white/55">
               This looks like SQL.{' '}
-              <Link to="/sql" className="inline-flex items-center gap-0.5 font-medium text-fg underline">
+              <Link to="/sql" className="inline-flex items-center gap-0.5 font-medium text-white underline">
                 <Terminal className="h-3 w-3" />
                 Use SQL tab
               </Link>{' '}
@@ -208,15 +208,15 @@ export function AskComposer({
             </p>
           ) : null}
 
-          <div className="flex items-start gap-2">
+          <div className="flex items-end gap-2">
             {historyItems.length > 0 ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
-                    className="h-9 w-9 shrink-0"
+                    className="mb-1 h-9 w-9 shrink-0 rounded-full text-white/50 hover:bg-white/10 hover:text-white"
                     aria-label="Question history"
                   >
                     <History className="h-4 w-4" />
@@ -242,34 +242,43 @@ export function AskComposer({
               onChange={(e) => onQuestionChange(e.target.value)}
               onKeyDown={onKeyDown}
               placeholder="Ask a question about your data in plain language…"
-              rows={2}
-              className="min-h-[3.5rem] max-h-60 flex-1 resize-y rounded-xl border border-border-default bg-black/30 px-3 py-2 text-sm text-white placeholder:text-fg-muted focus:border-border-accent focus:outline-none"
+              rows={3}
+              className="min-h-[5.25rem] max-h-60 flex-1 resize-none rounded-3xl border border-transparent bg-transparent px-2 py-3 text-[15px] leading-6 text-white placeholder:text-white/40 focus:outline-none"
             />
             <div className="flex shrink-0 flex-col gap-1.5">
               {busy ? (
-                <Button type="button" variant="outline" className="gap-1" onClick={() => onStop()}>
-                  Stop
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon"
+                  className="h-12 w-12 rounded-full bg-white text-black hover:bg-white/90"
+                  aria-label="Stop"
+                  onClick={() => onStop()}
+                >
+                  <Square className="h-4 w-4 fill-current" />
                 </Button>
-              ) : null}
-              <Button
-                type="button"
-                className="gap-1"
-                disabled={busy || !question.trim()}
-                onClick={() => submit()}
-              >
-                <Sparkles className="h-4 w-4" />
-                {busy ? 'Streaming…' : 'Ask'}
-              </Button>
+              ) : (
+                <Button
+                  type="button"
+                  size="icon"
+                  className="h-12 w-12 rounded-full bg-white text-black shadow-none hover:bg-white/90 disabled:bg-white/30 disabled:text-black/50"
+                  aria-label="Ask"
+                  disabled={!question.trim()}
+                  onClick={() => submit()}
+                >
+                  <ArrowUp className="h-5 w-5" />
+                </Button>
+              )}
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-2 pt-2">
             <PopoverAnchor asChild>
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className="h-7 max-w-full gap-1 truncate text-xs font-normal"
+                className="h-8 max-w-full gap-1 truncate rounded-full px-2 text-xs font-normal text-white/65 hover:bg-white/10 hover:text-white"
                 aria-label="Ask settings"
                 onClick={() => openOptions(null)}
               >
@@ -290,11 +299,11 @@ export function AskComposer({
               allIds={allIds}
             />
 
-            <span className="text-[10px] text-fg-muted">
-              <kbd className="rounded border border-border-default px-1 font-mono">⌘</kbd>+
-              <kbd className="rounded border border-border-default px-1 font-mono">Enter</kbd> send ·{' '}
-              <kbd className="rounded border border-border-default px-1 font-mono">↑</kbd> recall ·{' '}
-              <kbd className="rounded border border-border-default px-1 font-mono">⌘</kbd>.
+            <span className="text-[10px] text-white/40">
+              <kbd className="rounded-md border border-white/10 bg-white/[0.04] px-1 font-mono">⌘</kbd>+
+              <kbd className="rounded-md border border-white/10 bg-white/[0.04] px-1 font-mono">Enter</kbd> send ·{' '}
+              <kbd className="rounded-md border border-white/10 bg-white/[0.04] px-1 font-mono">↑</kbd> recall ·{' '}
+              <kbd className="rounded-md border border-white/10 bg-white/[0.04] px-1 font-mono">⌘</kbd>.
               stop
             </span>
           </div>

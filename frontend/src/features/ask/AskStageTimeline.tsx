@@ -51,7 +51,7 @@ export function AskStageTimeline({
   }
 
   return (
-    <div className="space-y-2 rounded-lg border border-border-default bg-black/20 px-3 py-2 text-xs">
+    <div className="space-y-2 rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-xs">
       <div className="flex flex-wrap items-center gap-1">
         {STAGE_ORDER.map((name) => {
           const hit = stages.filter((s) => s.name === name)
@@ -64,8 +64,8 @@ export function AskStageTimeline({
               className={cn(
                 'rounded-full border px-2 py-0.5 font-medium',
                 active && 'border-[hsl(var(--accent))] bg-white/10 text-white',
-                done && !active && 'border-border-default text-fg-muted',
-                !done && !active && 'border-border-default/50 text-fg-muted/60',
+                done && !active && 'border-white/10 text-white/55',
+                !done && !active && 'border-white/10 text-white/30',
               )}
             >
               {stageLabel(name)}
@@ -74,7 +74,7 @@ export function AskStageTimeline({
           )
         })}
         {typeof totalMs === 'number' ? (
-          <span className="ml-auto tabular-nums text-fg-muted">{formatStageMs(totalMs) ?? `${totalMs}ms`}</span>
+          <span className="ml-auto tabular-nums text-white/45">{formatStageMs(totalMs) ?? `${totalMs}ms`}</span>
         ) : null}
       </div>
 
@@ -84,17 +84,17 @@ export function AskStageTimeline({
             type="button"
             variant="ghost"
             size="sm"
-            className="h-7 gap-1 px-1 text-fg-muted"
+            className="h-7 gap-1 rounded-full px-1 text-white/45 hover:bg-white/10 hover:text-white"
             onClick={() => setAttemptsOpen((v) => !v)}
           >
             {attemptsOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
             SQL attempts ({sqlAttempts.length})
           </Button>
           {attemptsOpen ? (
-            <ul className="mt-1 max-h-48 space-y-2 overflow-y-auto rounded border border-border-default bg-black/30 p-2 font-mono text-[10px]">
+            <ul className="mt-1 max-h-48 space-y-2 overflow-y-auto rounded-xl border border-white/10 bg-black/30 p-2 font-mono text-[10px]">
               {sqlAttempts.map((a, idx) => (
-                <li key={`${a.attempt}-${idx}`} className="space-y-1 border-b border-border-default/40 pb-2 last:border-0">
-                  <div className="text-fg-muted">Attempt {a.attempt}</div>
+                <li key={`${a.attempt}-${idx}`} className="space-y-1 border-b border-white/10 pb-2 last:border-0">
+                  <div className="text-white/45">Attempt {a.attempt}</div>
                   {a.error ? (
                     <div className="whitespace-pre-wrap text-red-200/90">{a.error}</div>
                   ) : (

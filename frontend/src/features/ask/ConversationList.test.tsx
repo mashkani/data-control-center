@@ -12,6 +12,8 @@ const h = vi.hoisted(() => ({
   createAskConversation: vi.fn(),
   patchAskConversation: vi.fn(),
   deleteAskConversation: vi.fn(),
+  listDatasets: vi.fn(),
+  listAskTurns: vi.fn(),
 }))
 
 vi.mock('@/api/client', async (importOriginal) => {
@@ -24,6 +26,8 @@ vi.mock('@/api/client', async (importOriginal) => {
       createAskConversation: h.createAskConversation,
       patchAskConversation: h.patchAskConversation,
       deleteAskConversation: h.deleteAskConversation,
+      listDatasets: h.listDatasets,
+      listAskTurns: h.listAskTurns,
     },
   }
 })
@@ -70,6 +74,8 @@ describe('ConversationList', () => {
       updated_at: 't',
     })
     h.deleteAskConversation.mockResolvedValue(undefined)
+    h.listDatasets.mockResolvedValue([])
+    h.listAskTurns.mockResolvedValue([])
     useUiStore.setState({ activeConversationId: null })
   })
 
