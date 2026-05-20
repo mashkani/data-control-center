@@ -3,6 +3,25 @@
 Data Control Center is a **local workstation app**. Releases are **git tags and GitHub
 Releases** only—there is no PyPI or npm package publish step.
 
+## Pre-public security
+
+Before the first public release (or after a long private development period), scan the
+**full git history** for secrets:
+
+```bash
+gitleaks detect --source . --redact --verbose
+```
+
+**2026-05-20 audit (101 commits):** gitleaks reported **no leaks**. Manual history review
+found no committed `.env` files, workspace databases, API keys, or machine-specific paths.
+**Do not prune history** unless a future scan reports real findings—use targeted
+`git filter-repo` on affected paths only.
+
+Optional **author privacy** rewrite (normalize commit email to GitHub noreply, strip
+`Co-authored-by: Cursor` trailers) is documented in
+[`scripts/release/README.md`](../scripts/release/README.md); it rewrites SHAs and requires
+`git push --force-with-lease`.
+
 ## Preconditions
 
 - **[`CHANGELOG.md`](../CHANGELOG.md)** includes a dated version section (for example
