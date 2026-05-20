@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Info, MessageSquarePlus, Pencil, Search, Trash2 } from 'lucide-react'
+import { Info, MessageSquarePlus, PanelLeft, PanelLeftClose, Pencil, Search, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Sheet } from '@/components/ui/sheet'
@@ -133,10 +133,14 @@ export function ConversationList({
   mobileOpen: controlledMobileOpen,
   onMobileOpenChange,
   hideMobileTrigger = false,
+  desktopCollapsed = false,
+  onDesktopCollapsedChange,
 }: {
   mobileOpen?: boolean
   onMobileOpenChange?: (open: boolean) => void
   hideMobileTrigger?: boolean
+  desktopCollapsed?: boolean
+  onDesktopCollapsedChange?: (collapsed: boolean) => void
 } = {}) {
   const narrow = useNarrowViewport()
   const qc = useQueryClient()
@@ -212,18 +216,34 @@ export function ConversationList({
             </button>
           </Tooltip>
         </div>
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          className="h-8 gap-1 rounded-lg px-2 text-white/85 hover:bg-white/10"
-          aria-label="New"
-          onClick={() => createMut.mutate()}
-          disabled={createMut.isPending}
-        >
-          <MessageSquarePlus className="h-3.5 w-3.5" />
-          New chat
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="h-8 gap-1 rounded-lg px-2 text-white/85 hover:bg-white/10"
+            aria-label="New"
+            onClick={() => createMut.mutate()}
+            disabled={createMut.isPending}
+          >
+            <MessageSquarePlus className="h-3.5 w-3.5" />
+            New chat
+          </Button>
+          {onDesktopCollapsedChange ? (
+            <Tooltip content="Collapse chat history">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="hidden h-8 w-8 rounded-lg text-white/60 hover:bg-white/10 hover:text-white md:inline-flex"
+                aria-label="Collapse chat history"
+                onClick={() => onDesktopCollapsedChange(true)}
+              >
+                <PanelLeftClose className="h-4 w-4" />
+              </Button>
+            </Tooltip>
+          ) : null}
+        </div>
       </div>
 
       <div className="relative mb-3">
@@ -326,9 +346,42 @@ export function ConversationList({
 
   return (
     <>
-      <aside className="hidden h-full min-h-0 w-[19rem] shrink-0 flex-col border-r border-white/10 bg-[#1f232b] px-3 py-4 md:flex">
-        {listContent}
-      </aside>
+      {desktopCollapsed ? (
+        <aside
+          className="hidden h-full min-h-0 w-14 shrink-0 flex-col items-center gap-2 border-r border-white/10 bg-[#1f232b] px-2 py-4 md:flex"
+          aria-label="Collapsed chat history"
+        >
+          <Tooltip content="Expand chat history">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-xl text-white/65 hover:bg-white/10 hover:text-white"
+              aria-label="Expand chat history"
+              onClick={() => onDesktopCollapsedChange?.(false)}
+            >
+              <PanelLeft className="h-4 w-4" />
+            </Button>
+          </Tooltip>
+          <Tooltip content="New chat">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-xl text-white/65 hover:bg-white/10 hover:text-white"
+              aria-label="New chat"
+              onClick={() => createMut.mutate()}
+              disabled={createMut.isPending}
+            >
+              <MessageSquarePlus className="h-4 w-4" />
+            </Button>
+          </Tooltip>
+        </aside>
+      ) : (
+        <aside className="hidden h-full min-h-0 w-[19rem] shrink-0 flex-col border-r border-white/10 bg-[#1f232b] px-3 py-4 md:flex">
+          {listContent}
+        </aside>
+      )}
       {sheet}
       {deleteDialog}
     </>

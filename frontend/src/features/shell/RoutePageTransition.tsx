@@ -14,6 +14,7 @@ function RoutePageTransitionFrame({ children }: { children: ReactNode }) {
     <div
       data-testid="route-page-transition"
       className={cn(
+        'h-full',
         'transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none motion-reduce:transform-none',
         entered ? 'translate-y-0 opacity-100' : 'translate-y-1 opacity-0',
       )}

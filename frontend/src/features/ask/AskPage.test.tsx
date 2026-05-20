@@ -131,7 +131,12 @@ describe('AskPage', () => {
       status: 'ok',
       llm: { reachable: true, model: 'qwen3:4b', detail: null },
     })
-    useUiStore.setState({ pendingQuery: null, activeConversationId: null, activeDatasetId: null })
+    useUiStore.setState({
+      pendingQuery: null,
+      activeConversationId: null,
+      activeDatasetId: null,
+      askConversationHistoryCollapsed: false,
+    })
   })
 
   it('shows LLM status banner when health reports unreachable', async () => {
@@ -202,6 +207,24 @@ describe('AskPage', () => {
     wrap(<AskPage />)
     await waitFor(() => expect(screen.getByText('Old?')).toBeInTheDocument())
     expect(screen.queryByTestId('suggested-prompts')).not.toBeInTheDocument()
+  })
+
+  it('keeps the composer mounted below a visible thread', async () => {
+    h.listAskTurns.mockResolvedValue([
+      {
+        turn_id: 't1',
+        conversation_id: 'c1',
+        seq: 1,
+        question: 'Old?',
+        attempts: [],
+        created_at: 'now',
+      },
+    ])
+    useUiStore.setState({ activeConversationId: 'c1', activeDatasetId: 'ds_001' })
+    wrap(<AskPage />)
+
+    await waitFor(() => expect(screen.getByTestId('ask-thread-scroll')).toBeInTheDocument())
+    expect(screen.getByPlaceholderText(/plain language/i)).toBeInTheDocument()
   })
 
   it('does not show removed static info copy', async () => {

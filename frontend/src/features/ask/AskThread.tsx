@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button'
 import type { AskCallState } from '@/hooks/useAskStream'
 
 const NEAR_BOTTOM_PX = 96
-/** Extra scroll padding so the last bubble clears the composer/footer */
-const THREAD_BOTTOM_PADDING = 'pb-40'
+/** Breathing room below the last bubble before the fixed composer row. */
+const THREAD_BOTTOM_PADDING = 'pb-10'
 
 function isNearBottom(el: HTMLDivElement): boolean {
   return el.scrollHeight - el.scrollTop - el.clientHeight <= NEAR_BOTTOM_PX

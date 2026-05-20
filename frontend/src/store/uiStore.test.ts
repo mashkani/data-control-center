@@ -43,6 +43,11 @@ describe('uiStore', () => {
     expect(useUiStore.getState().sqlEditorHeight).toBe(360)
     useUiStore.getState().setSqlSchemaCollapsed(false)
     expect(useUiStore.getState().sqlSchemaCollapsed).toBe(false)
+
+    useUiStore.getState().setAskConversationHistoryCollapsed(true)
+    expect(useUiStore.getState().askConversationHistoryCollapsed).toBe(true)
+    useUiStore.getState().setAskConversationHistoryCollapsed(false)
+    expect(useUiStore.getState().askConversationHistoryCollapsed).toBe(false)
   })
 
   it('stores per-conversation Ask prefs and local error turns', () => {

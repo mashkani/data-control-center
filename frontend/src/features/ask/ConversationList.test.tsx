@@ -76,7 +76,7 @@ describe('ConversationList', () => {
     h.deleteAskConversation.mockResolvedValue(undefined)
     h.listDatasets.mockResolvedValue([])
     h.listAskTurns.mockResolvedValue([])
-    useUiStore.setState({ activeConversationId: null })
+    useUiStore.setState({ activeConversationId: null, askConversationHistoryCollapsed: false })
   })
 
   it('lists conversations and selects one', async () => {
@@ -119,5 +119,61 @@ describe('ConversationList', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: /^Delete$/ })).toBeInTheDocument())
     await user.click(screen.getByRole('button', { name: /^Delete$/ }))
     await waitFor(() => expect(h.deleteAskConversation).toHaveBeenCalledWith('c1'))
+  })
+
+  it('shows expanded desktop history controls by default', async () => {
+    wrap(<ConversationList desktopCollapsed={false} onDesktopCollapsedChange={vi.fn()} />)
+
+    await waitFor(() => expect(screen.getByText('First chat')).toBeInTheDocument())
+    expect(screen.getByRole('textbox', { name: 'Search conversations' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^New$/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Collapse chat history' })).toBeInTheDocument()
+  })
+
+  it('collapses desktop history to a narrow rail', async () => {
+    const user = userEvent.setup()
+    const onCollapsedChange = vi.fn()
+    wrap(<ConversationList desktopCollapsed={false} onDesktopCollapsedChange={onCollapsedChange} />)
+
+    await user.click(await screen.findByRole('button', { name: 'Collapse chat history' }))
+    expect(onCollapsedChange).toHaveBeenCalledWith(true)
+  })
+
+  it('expands desktop history from the narrow rail', async () => {
+    const user = userEvent.setup()
+    const onCollapsedChange = vi.fn()
+    wrap(<ConversationList desktopCollapsed onDesktopCollapsedChange={onCollapsedChange} />)
+
+    expect(screen.queryByRole('textbox', { name: 'Search conversations' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Expand chat history' }))
+    expect(onCollapsedChange).toHaveBeenCalledWith(false)
+  })
+
+  it('creates a conversation from the collapsed desktop rail', async () => {
+    const user = userEvent.setup()
+    wrap(<ConversationList desktopCollapsed onDesktopCollapsedChange={vi.fn()} />)
+
+    await user.click(screen.getByRole('button', { name: 'New chat' }))
+    await waitFor(() => expect(h.createAskConversation).toHaveBeenCalled())
+    expect(useUiStore.getState().activeConversationId).toBe('c_new')
+  })
+
+  it('keeps the narrow viewport sheet trigger separate from desktop collapse controls', async () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn().mockImplementation(() => ({
+        matches: true,
+        media: '',
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    )
+    const user = userEvent.setup()
+    wrap(<ConversationList desktopCollapsed onDesktopCollapsedChange={vi.fn()} />)
+
+    expect(screen.queryByRole('button', { name: 'Expand chat history' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Chats' }))
+    await waitFor(() => expect(screen.getByRole('dialog', { name: 'Ask conversations' })).toBeInTheDocument())
+    expect(screen.getByRole('textbox', { name: 'Search conversations' })).toBeInTheDocument()
   })
 })

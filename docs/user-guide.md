@@ -121,7 +121,8 @@ turn. Failed streams that do not persist are kept locally so you can retry after
 **Submit / stop:** **⌘+Enter** or **Ctrl+Enter** to submit; **⌘+.** or **Esc** stops an
 in-flight stream; **⌘+,** opens settings.
 
-**Conversations:** Search by title in the Codex-style left rail. New chats auto-title from the
+**Conversations:** Search by title in the Codex-style left rail; on desktop, collapse the
+rail to a narrow icon strip when you want more thread space. New chats auto-title from the
 first question. Rows show status (OK / Error), relative time, and dataset chips when scoped.
 Prior turns are stored in the workspace (hover **(i)** on **Chats** for details).
 

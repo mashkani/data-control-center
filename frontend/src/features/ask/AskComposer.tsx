@@ -195,7 +195,7 @@ export function AskComposer({
         if (!open) onOptionsFocusChange(null)
       }}
     >
-      <div className="sticky bottom-0 z-20 shrink-0 px-3 pb-4 pt-3">
+      <div className="relative z-20 shrink-0 px-3 pb-4 pt-3">
         <div className="mx-auto w-full max-w-5xl rounded-[2rem] border border-white/10 bg-[#2b2b2d]/95 p-3 shadow-[0_24px_90px_rgba(0,0,0,0.45)] backdrop-blur-xl">
           {looksLikeSql(question) ? (
             <p className="mb-2 px-2 text-[11px] text-white/55">

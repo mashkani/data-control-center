@@ -31,6 +31,8 @@ export function AskPage() {
   const pushAskErrorTurn = useUiStore((s) => s.pushAskErrorTurn)
   const clearAskErrorsMatchingQuestion = useUiStore((s) => s.clearAskErrorsMatchingQuestion)
   const recentErrorsByConversation = useUiStore((s) => s.recentErrorsByConversation)
+  const conversationHistoryCollapsed = useUiStore((s) => s.askConversationHistoryCollapsed)
+  const setConversationHistoryCollapsed = useUiStore((s) => s.setAskConversationHistoryCollapsed)
   const openInSql = useOpenInSql()
 
   const { busy, current, run, cancel } = useAskStream()
@@ -226,12 +228,14 @@ export function AskPage() {
     'model…'
 
   return (
-    <PageContainer className="flex h-full min-h-[calc(100vh-8rem)] flex-col space-y-0 overflow-hidden !p-0">
+    <PageContainer className="flex h-full min-h-0 flex-col space-y-0 overflow-hidden !p-0">
       <div className="flex h-full min-h-0 flex-1 overflow-hidden bg-[#101113] text-white md:rounded-none">
         <ConversationList
           mobileOpen={conversationsMobileOpen}
           onMobileOpenChange={setConversationsMobileOpen}
           hideMobileTrigger
+          desktopCollapsed={conversationHistoryCollapsed}
+          onDesktopCollapsedChange={setConversationHistoryCollapsed}
         />
 
         <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
@@ -256,33 +260,35 @@ export function AskPage() {
             onOpenChats={() => setConversationsMobileOpen(true)}
           />
 
-          <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden">
-            {turnsLoading && activeConversationId ? <AskThreadSkeleton /> : null}
+          <div className="relative z-10 grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto] overflow-hidden">
+            <div className="flex min-h-0 overflow-hidden">
+              {turnsLoading && activeConversationId ? <AskThreadSkeleton /> : null}
 
-            {showHero ? (
-              <AskHero
-                onStartNewChat={() => createConversationMut.mutate()}
-              />
-            ) : (
-              <AskThread
-                conversationId={activeConversationId}
-                turns={mergedTurns}
-                streamingQuestion={streamPersisted ? null : streamQuestion}
-                streaming={streamPersisted ? null : current}
-                busy={busy}
-                onOpenInSql={openInSql}
-                onRetry={onRetry}
-                onDeleteTurn={async (turnId) => {
-                  if (!activeConversationId) return
-                  if (turnId.startsWith('err-')) {
-                    useUiStore.getState().removeAskErrorTurn(activeConversationId, turnId)
-                    return
-                  }
-                  await api.deleteAskTurn(activeConversationId, turnId)
-                  void qc.invalidateQueries({ queryKey: ['ask', 'turns', activeConversationId] })
-                }}
-              />
-            )}
+              {showHero ? (
+                <AskHero
+                  onStartNewChat={() => createConversationMut.mutate()}
+                />
+              ) : (
+                <AskThread
+                  conversationId={activeConversationId}
+                  turns={mergedTurns}
+                  streamingQuestion={streamPersisted ? null : streamQuestion}
+                  streaming={streamPersisted ? null : current}
+                  busy={busy}
+                  onOpenInSql={openInSql}
+                  onRetry={onRetry}
+                  onDeleteTurn={async (turnId) => {
+                    if (!activeConversationId) return
+                    if (turnId.startsWith('err-')) {
+                      useUiStore.getState().removeAskErrorTurn(activeConversationId, turnId)
+                      return
+                    }
+                    await api.deleteAskTurn(activeConversationId, turnId)
+                    void qc.invalidateQueries({ queryKey: ['ask', 'turns', activeConversationId] })
+                  }}
+                />
+              )}
+            </div>
 
             <AskComposer
               key={prefsKey}

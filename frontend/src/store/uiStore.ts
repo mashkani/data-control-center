@@ -54,6 +54,8 @@ type UiState = {
   setSqlEditorHeight: (h: number) => void
   sqlSchemaCollapsed: boolean
   setSqlSchemaCollapsed: (v: boolean) => void
+  askConversationHistoryCollapsed: boolean
+  setAskConversationHistoryCollapsed: (v: boolean) => void
   askConversationPrefs: Record<string, AskConversationPrefs>
   setAskConversationPrefs: (conversationId: string, patch: Partial<AskConversationPrefs>) => void
   recentErrorsByConversation: Record<string, AskLocalErrorTurn[]>
@@ -117,6 +119,8 @@ export const useUiStore = create<UiState>((set, get) => ({
   setSqlEditorHeight: (h) => set({ sqlEditorHeight: h }),
   sqlSchemaCollapsed: true,
   setSqlSchemaCollapsed: (v) => set({ sqlSchemaCollapsed: v }),
+  askConversationHistoryCollapsed: false,
+  setAskConversationHistoryCollapsed: (v) => set({ askConversationHistoryCollapsed: v }),
   askConversationPrefs: {},
   setAskConversationPrefs: (conversationId, patch) =>
     set((s) => ({
