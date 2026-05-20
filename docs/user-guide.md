@@ -100,8 +100,9 @@ Optional local LLM assistant via [Ollama](https://ollama.com).
    for model, row limit, and dataset scope, type a question, and send.
 
 The backend drafts a read-only **`SELECT`/`WITH`**, runs it through the same validation
-as the SQL tab, and returns a concise answer. Open generated SQL in the **SQL** tab from
-the turn UI.
+as the SQL tab, then makes a second local Ollama call by default to turn the result into
+a direct concise answer. Set **`DCC_AGENT_SUMMARIZE_WITH_LLM=false`** if you prefer the
+lower-latency deterministic fallback. Open generated SQL in the **SQL** tab from the turn UI.
 
 **First visit:** With no turns in the active chat, Ask shows a centered dark workspace with a
 **What should we ask?** hero. After the first question (or when you open a chat with history),

@@ -7,7 +7,7 @@ import type { AskCallState } from '@/hooks/useAskStream'
 
 const NEAR_BOTTOM_PX = 96
 /** Breathing room below the last bubble before the fixed composer row. */
-const THREAD_BOTTOM_PADDING = 'pb-10'
+const THREAD_BOTTOM_PADDING = 'pb-6'
 
 function isNearBottom(el: HTMLDivElement): boolean {
   return el.scrollHeight - el.scrollTop - el.clientHeight <= NEAR_BOTTOM_PX
@@ -124,7 +124,7 @@ export function AskThread({
         ref={threadRef}
         data-testid="ask-thread-scroll"
         onScroll={onScroll}
-        className={`flex min-h-0 flex-1 flex-col items-center gap-5 overflow-y-auto px-4 pt-3 ${THREAD_BOTTOM_PADDING}`}
+        className={`flex min-h-0 flex-1 flex-col items-center gap-3 overflow-y-auto px-3 pt-2 ${THREAD_BOTTOM_PADDING}`}
       >
         {turns.map((t) => (
           <AskTurnCard

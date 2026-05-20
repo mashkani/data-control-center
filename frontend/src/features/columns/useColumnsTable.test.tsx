@@ -68,6 +68,15 @@ describe('useColumnsTable', () => {
     ])
   })
 
+  it('sorts rows by column name ascending by default', async () => {
+    const { result } = renderHook(() => useColumnsTable(), { wrapper })
+    await waitFor(() => expect(result.current.table.getRowModel().rows).toHaveLength(2))
+    expect(result.current.table.getRowModel().rows.map((r) => r.original.name)).toEqual([
+      'alpha',
+      'beta',
+    ])
+  })
+
   it('filters rows by column search', async () => {
     useUiStore.setState({ columnSearch: 'alp' })
     const { result } = renderHook(() => useColumnsTable(), { wrapper })

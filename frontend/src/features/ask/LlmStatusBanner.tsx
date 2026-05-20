@@ -18,7 +18,7 @@ export function LlmStatusBanner() {
   return (
     <div
       role="status"
-      className="relative z-20 mx-auto mt-3 w-[calc(100%-2rem)] max-w-5xl shrink-0 rounded-2xl border border-amber-300/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100/80"
+      className="relative z-20 mx-auto mt-2 w-[calc(100%-2rem)] max-w-5xl shrink-0 rounded-xl border border-amber-300/20 bg-amber-500/10 px-3 py-2.5 text-sm text-amber-100/80"
     >
       <p>
         Ollama is not reachable at the configured endpoint, so{' '}

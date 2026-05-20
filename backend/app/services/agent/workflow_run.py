@@ -27,6 +27,7 @@ from app.services.agent.prompts import (
     _empty_result_retry_prompt,
     _should_retry_empty_result,
     _sql_retry_prompt,
+    _summary_messages,
     _system_prompt,
 )
 from app.services.query import execute_query
@@ -224,25 +225,14 @@ def _run_ask_workflow(
                 "type": "stage",
                 "data": {"name": "summarize", "elapsed_ms": elapsed_ms()},
             }
-            summary_messages = [
-                {
-                    "role": "system",
-                    "content": (
-                        "Summarize the query result for the user in clear language. "
-                        'Be concise. Return JSON {"answer": "..."} only.'
-                    ),
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"Question: {req.question.strip()}\n"
-                        f"SQL used: {draft.sql}\n"
-                        f"Explanation from model: {draft.explanation}\n"
-                        "Result preview (JSON):\n"
-                        f"{_result_preview_for_summary(qres.model_dump(mode='json'), settings.agent_summarize_max_json_chars)}"
-                    ),
-                },
-            ]
+            fallback_answer = _default_answer(draft, qres)
+            summary_messages = _summary_messages(
+                req,
+                _result_preview_for_summary(
+                    qres.model_dump(mode="json"),
+                    settings.agent_summarize_max_json_chars,
+                ),
+            )
             try:
                 if emit_summary_tokens:
                     acc = ""
@@ -253,13 +243,12 @@ def _run_ask_workflow(
                 else:
                     summary_content = ollama_call(llm_settings, summary_messages, OLLAMA_SUMMARY_FORMAT)
                 parsed_ans, serr = parse_summary_answer(summary_content)
-                answer = parsed_ans or (
-                    f"{draft.explanation}\n\n(Summarization issue: {serr})".strip()
-                    if serr
-                    else (draft.explanation or "Query completed.")
-                )
+                if serr:
+                    logger.warning("Ollama summary parse failed: %s", serr)
+                answer = parsed_ans or fallback_answer
             except (httpx.HTTPError, OSError) as e:
-                answer = f"{draft.explanation}\n\n(Summarization unavailable: {e})".strip()
+                logger.warning("Ollama summary failed; using fallback answer: %s", e)
+                answer = fallback_answer
             yield from _finish_success(
                 registry,
                 req,

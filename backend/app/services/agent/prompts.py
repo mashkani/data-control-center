@@ -47,6 +47,35 @@ def _system_prompt() -> str:
         "- Prefer quoted identifiers for column names when they contain spaces or special characters "
         'using double quotes, e.g. "col name".\n'
     )
+
+
+def _summary_messages(
+    req: AgentAskRequest,
+    result_preview_json: str,
+) -> list[dict[str, str]]:
+    return [
+        {
+            "role": "system",
+            "content": (
+                "Answer the user's data question directly from the result preview. "
+                "Do not describe the SQL, query, process, columns selected, ordering, limits, "
+                "or why the query answers the question. Never use phrases like "
+                '"the query selects", "SQL used", "returned rows", or "this answers the question". '
+                "Use one concise sentence for simple lookup/count questions. Use short bullets only "
+                "when the user asked for multiple items. Return JSON {\"answer\": \"...\"} only."
+            ),
+        },
+        {
+            "role": "user",
+            "content": (
+                f"Question: {req.question.strip()}\n"
+                "Result preview (JSON):\n"
+                f"{result_preview_json}"
+            ),
+        },
+    ]
+
+
 def _sql_retry_prompt(err_text: str) -> str:
     hint = ""
     if "GROUP BY clause cannot contain aggregates" in err_text:

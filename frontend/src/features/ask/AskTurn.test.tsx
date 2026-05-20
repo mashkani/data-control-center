@@ -123,7 +123,7 @@ describe('AskTurn', () => {
         sql="SELECT COUNT(*) AS n FROM t"
         explanation="Counted rows."
         queryResult={null}
-        answer="Counted rows.\n\nReturned 1 row."
+        answer="There are 2 rows."
         error={null}
         streamingPreview=""
         model="qwen"
@@ -133,7 +133,7 @@ describe('AskTurn', () => {
     )
 
     expect(screen.queryByText(/Model note/i)).not.toBeInTheDocument()
-    expect(screen.getByText(/Returned 1 row/)).toBeInTheDocument()
+    expect(screen.getByText(/There are 2 rows/)).toBeInTheDocument()
   })
 
   it('renders streaming card states including explanation, preview answer, retry gating, and query error', async () => {

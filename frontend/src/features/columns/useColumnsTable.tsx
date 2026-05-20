@@ -40,7 +40,7 @@ export function useColumnsTable() {
   const columnsDensity = useUiStore((s) => s.columnsDensity)
   const setColumnsDensity = useUiStore((s) => s.setColumnsDensity)
 
-  const [sorting, setSorting] = useState<SortingState>([{ id: 'missing', desc: true }])
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'name', desc: false }])
 
   const profile = useDatasetProfile(activeId)
   const q = {

@@ -138,7 +138,7 @@ two-server development workflow. **`DCC_DEV_UI_ORIGIN`** accepts only local HTTP
 | **`DCC_AGENT_CONTEXT_MAX_COLUMNS`** | `40` | Columns in agent context |
 | **`DCC_AGENT_MAX_ROWS`** | `500` | Max rows for agent queries |
 | **`DCC_AGENT_SQL_ATTEMPTS`** | `2` | SQL retry attempts |
-| **`DCC_AGENT_SUMMARIZE_WITH_LLM`** | `false` | Second LLM call to summarize results |
+| **`DCC_AGENT_SUMMARIZE_WITH_LLM`** | `true` | Second LLM call for direct result answers |
 | **`DCC_AGENT_SUMMARIZE_MAX_JSON_CHARS`** | `4000` | Result JSON cap for summarization |
 
 Ask usage: [`docs/user-guide.md`](../docs/user-guide.md#ask-tab). Agent code:

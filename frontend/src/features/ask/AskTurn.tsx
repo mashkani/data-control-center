@@ -52,11 +52,11 @@ function SqlBlock({
   )
 
   return (
-    <details open className="group rounded-2xl border border-white/10 bg-black/20">
-      <summary className="cursor-pointer list-none px-4 py-3 marker:hidden">
+    <details open className="group rounded-xl border border-white/10 bg-black/20">
+      <summary className="cursor-pointer list-none px-3 py-2.5 marker:hidden">
         <span className="text-xs font-medium text-white/55">Generated SQL</span>
       </summary>
-      <div className="flex flex-wrap gap-2 border-t border-white/10 px-4 pb-3">
+      <div className="flex flex-wrap gap-2 border-t border-white/10 px-3 pb-2.5">
         <Button type="button" variant="outline" size="sm" onClick={() => onOpenInSql(sql)}>
           Open in SQL
         </Button>
@@ -83,7 +83,7 @@ function SqlBlock({
       <div className="overflow-hidden border-t border-white/10">
         <CodeMirror
           value={displaySql}
-          height="120px"
+          height="96px"
           theme="none"
           extensions={extensions}
           editable={false}
@@ -212,14 +212,14 @@ export function AskTurnCard({
   }
 
   return (
-    <div id={`turn-${turn.turn_id}`} className="w-full max-w-5xl scroll-mt-4 space-y-3">
+    <div id={`turn-${turn.turn_id}`} className="w-full max-w-5xl scroll-mt-4 space-y-2.5">
       <div className="flex justify-end">
-        <div className="max-w-[min(42rem,90%)] rounded-[1.35rem] bg-[#2f3033] px-4 py-3 text-sm leading-6 text-white/95 shadow-[0_10px_40px_rgba(0,0,0,0.22)]">
+        <div className="max-w-[min(42rem,90%)] rounded-2xl bg-[#2f3033] px-3.5 py-2.5 text-[13px] leading-5 text-white/95 shadow-[0_10px_36px_rgba(0,0,0,0.20)]">
           {turn.question}
         </div>
       </div>
 
-      <div className="space-y-3 rounded-[1.6rem] border border-white/10 bg-white/[0.035] p-4 shadow-[0_18px_70px_rgba(0,0,0,0.22)]">
+      <div className="space-y-2.5 rounded-2xl border border-white/10 bg-white/[0.035] p-3 shadow-[0_16px_60px_rgba(0,0,0,0.20)]">
         <TurnMetaSummary
           model={turn.model}
           attemptCount={attempts.length}
@@ -251,15 +251,15 @@ export function AskTurnCard({
         {turn.error ? <QueryErrorBanner message={turn.error} /> : null}
         {turn.sql ? <SqlBlock sql={turn.sql} onOpenInSql={onOpenInSql} /> : null}
         {turn.query_result && !turn.query_result.error ? (
-          <div className="overflow-hidden rounded-2xl border border-white/10">
+          <div className="overflow-hidden rounded-xl border border-white/10">
             <AskResultTable queryResult={turn.query_result} />
           </div>
         ) : null}
         {turn.query_result?.error ? <QueryErrorBanner message={turn.query_result.error} /> : null}
         {displayAnswer ? (
-          <div className="rounded-2xl bg-black/15 px-4 py-3">
+          <div className="rounded-xl bg-black/15 px-3 py-2.5">
             <div className="text-xs font-medium uppercase tracking-wider text-white/40">Answer</div>
-            <div className="prose prose-invert prose-sm mt-2 max-w-none text-white/90 [&_p]:my-2 [&_ul]:my-2">
+            <div className="prose prose-invert prose-sm mt-1.5 max-w-none text-white/90 [&_p]:my-1.5 [&_ul]:my-1.5">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayAnswer}</ReactMarkdown>
             </div>
           </div>
@@ -314,13 +314,13 @@ export function StreamingAskCard({
   const displayAnswer = answer || streamingPreview || ''
   const showModelNote = shouldShowStreamingModelNote(explanation, answer)
   return (
-    <div className="w-full max-w-5xl space-y-3" aria-busy={busy}>
+    <div className="w-full max-w-5xl space-y-2.5" aria-busy={busy}>
       <div className="flex justify-end">
-        <div className="max-w-[min(42rem,90%)] rounded-[1.35rem] bg-[#2f3033] px-4 py-3 text-sm leading-6 text-white/95 shadow-[0_10px_40px_rgba(0,0,0,0.22)]">
+        <div className="max-w-[min(42rem,90%)] rounded-2xl bg-[#2f3033] px-3.5 py-2.5 text-[13px] leading-5 text-white/95 shadow-[0_10px_36px_rgba(0,0,0,0.20)]">
           {question}
         </div>
       </div>
-      <div className="space-y-3 rounded-[1.6rem] border border-dashed border-white/15 bg-white/[0.05] p-4 shadow-[0_18px_70px_rgba(0,0,0,0.22)]">
+      <div className="space-y-2.5 rounded-2xl border border-dashed border-white/15 bg-white/[0.05] p-3 shadow-[0_16px_60px_rgba(0,0,0,0.20)]">
         {model ? (
           <TurnMetaSummary model={model} attemptCount={0} elapsedMs={totalMs} />
         ) : null}
@@ -329,7 +329,7 @@ export function StreamingAskCard({
           <AskStageTimeline stages={stages} sqlAttempts={sqlAttempts} totalMs={totalMs} busy={busy} />
         )}
         {showModelNote ? (
-          <div className="rounded-2xl bg-black/15 px-4 py-3">
+          <div className="rounded-xl bg-black/15 px-3 py-2.5">
             <div className="text-xs font-medium text-white/40">Model note</div>
             <p className="mt-1 text-sm text-white/90">{explanation}</p>
           </div>
@@ -337,7 +337,7 @@ export function StreamingAskCard({
         {error ? <QueryErrorBanner message={error} /> : null}
         {sql ? <SqlBlock sql={sql} onOpenInSql={onOpenInSql} /> : null}
         {queryResult && !queryResult.error ? (
-          <div className="overflow-hidden rounded-2xl border border-white/10">
+          <div className="overflow-hidden rounded-xl border border-white/10">
             <AskResultTable queryResult={queryResult} />
           </div>
         ) : null}
@@ -346,10 +346,10 @@ export function StreamingAskCard({
           <div
             role="region"
             aria-live="polite"
-            className="rounded-2xl border border-white/10 bg-black/20 p-4"
+            className="rounded-xl border border-white/10 bg-black/20 p-3"
           >
             <div className="text-xs font-medium uppercase tracking-wider text-white/40">Answer</div>
-            <div className="prose prose-invert prose-sm mt-2 max-w-none text-white/90 [&_p]:my-2 [&_ul]:my-2">
+            <div className="prose prose-invert prose-sm mt-1.5 max-w-none text-white/90 [&_p]:my-1.5 [&_ul]:my-1.5">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayAnswer}</ReactMarkdown>
             </div>
           </div>

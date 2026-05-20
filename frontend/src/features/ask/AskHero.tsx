@@ -7,14 +7,14 @@ export function AskHero({
   onStartNewChat?: () => void
 }) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 py-10" data-testid="ask-hero">
-      <div className="w-full max-w-4xl space-y-8 text-center">
-        <div className="space-y-4">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] shadow-[0_20px_80px_rgba(0,0,0,0.35)]">
-            <Sparkles className="h-6 w-6 text-[hsl(var(--accent))]" aria-hidden />
+    <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 py-8" data-testid="ask-hero">
+      <div className="w-full max-w-4xl space-y-6 text-center">
+        <div className="space-y-3">
+          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] shadow-[0_18px_60px_rgba(0,0,0,0.32)]">
+            <Sparkles className="h-5 w-5 text-[hsl(var(--accent))]" aria-hidden />
           </div>
           <div className="space-y-2">
-            <h2 className="text-3xl font-medium tracking-tight text-white sm:text-4xl">
+            <h2 className="text-2xl font-medium tracking-tight text-white sm:text-3xl">
               What should we ask?
               <span className="sr-only">Ask your data</span>
             </h2>

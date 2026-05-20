@@ -230,7 +230,8 @@ def test_run_agent_ask_stream_summary_http_error(registry_csv: DatasetRegistry) 
         ),
     )
     assert ev[-3]["type"] == "answer"
-    assert "unavailable" in ev[-3]["data"]["answer"]
+    assert "unavailable" not in ev[-3]["data"]["answer"]
+    assert ev[-3]["data"]["answer"]
 
 
 def test_run_agent_ask_stream_parse_retry_then_ok(registry_csv: DatasetRegistry) -> None:
@@ -445,4 +446,3 @@ def test_run_agent_ask_stream_summary_emits_turn_with_conversation(registry_csv:
     )
     assert any(e["type"] == "turn" for e in ev)
     assert registry_csv.workspace.ask.list_turns( cid)[0]["answer"] == "hi"
-

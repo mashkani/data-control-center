@@ -30,6 +30,7 @@ from app.services.agent.prompts import (
     _empty_result_retry_prompt,
     _should_retry_empty_result,
     _sql_retry_prompt,
+    _summary_messages,
     _system_prompt,
 )
 from app.services.agent.workflow_run import _run_ask_workflow
@@ -48,6 +49,7 @@ __all__ = [
     "_run_ask_workflow",
     "_should_retry_empty_result",
     "_sql_retry_prompt",
+    "_summary_messages",
     "_system_prompt",
     "build_dataset_context",
     "ollama_chat",

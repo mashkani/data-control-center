@@ -36,7 +36,7 @@ export function AskContextBar({
 
   return (
     <div
-      className="mx-auto flex w-full max-w-5xl shrink-0 flex-wrap items-center gap-2 px-4 py-3 text-white/60"
+      className="mx-auto flex w-full max-w-5xl shrink-0 flex-wrap items-center gap-2 px-4 py-2 text-white/60"
       data-testid="ask-context-bar"
     >
       {showChatsButton && onOpenChats ? (

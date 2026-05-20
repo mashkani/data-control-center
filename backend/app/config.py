@@ -75,7 +75,7 @@ class Settings(BaseSettings):
     agent_context_max_columns: int = Field(default=40, ge=1, le=500)
     agent_max_rows: int = Field(default=500, ge=1, le=100_000)
     agent_sql_attempts: int = Field(default=2, ge=1, le=10)
-    agent_summarize_with_llm: bool = False
+    agent_summarize_with_llm: bool = True
     agent_summarize_max_json_chars: int = Field(default=4_000, ge=500)
 
 

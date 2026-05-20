@@ -195,8 +195,8 @@ export function AskComposer({
         if (!open) onOptionsFocusChange(null)
       }}
     >
-      <div className="relative z-20 shrink-0 px-3 pb-4 pt-3">
-        <div className="mx-auto w-full max-w-5xl rounded-[2rem] border border-white/10 bg-[#2b2b2d]/95 p-3 shadow-[0_24px_90px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+      <div className="relative z-20 shrink-0 px-3 pb-3 pt-2">
+        <div className="mx-auto w-full max-w-5xl rounded-[1.5rem] border border-white/10 bg-[#2b2b2d]/95 p-2.5 shadow-[0_20px_70px_rgba(0,0,0,0.42)] backdrop-blur-xl">
           {looksLikeSql(question) ? (
             <p className="mb-2 px-2 text-[11px] text-white/55">
               This looks like SQL.{' '}
@@ -216,7 +216,7 @@ export function AskComposer({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="mb-1 h-9 w-9 shrink-0 rounded-full text-white/50 hover:bg-white/10 hover:text-white"
+                    className="mb-1 h-8 w-8 shrink-0 rounded-full text-white/50 hover:bg-white/10 hover:text-white"
                     aria-label="Question history"
                   >
                     <History className="h-4 w-4" />
@@ -242,8 +242,8 @@ export function AskComposer({
               onChange={(e) => onQuestionChange(e.target.value)}
               onKeyDown={onKeyDown}
               placeholder="Ask a question about your data in plain language…"
-              rows={3}
-              className="min-h-[5.25rem] max-h-60 flex-1 resize-none rounded-3xl border border-transparent bg-transparent px-2 py-3 text-[15px] leading-6 text-white placeholder:text-white/40 focus:outline-none"
+              rows={2}
+              className="min-h-[3.75rem] max-h-44 flex-1 resize-none rounded-2xl border border-transparent bg-transparent px-2 py-2 text-sm leading-6 text-white placeholder:text-white/40 focus:outline-none"
             />
             <div className="flex shrink-0 flex-col gap-1.5">
               {busy ? (
@@ -251,7 +251,7 @@ export function AskComposer({
                   type="button"
                   variant="secondary"
                   size="icon"
-                  className="h-12 w-12 rounded-full bg-white text-black hover:bg-white/90"
+                  className="h-10 w-10 rounded-full bg-white text-black hover:bg-white/90"
                   aria-label="Stop"
                   onClick={() => onStop()}
                 >
@@ -261,7 +261,7 @@ export function AskComposer({
                 <Button
                   type="button"
                   size="icon"
-                  className="h-12 w-12 rounded-full bg-white text-black shadow-none hover:bg-white/90 disabled:bg-white/30 disabled:text-black/50"
+                  className="h-10 w-10 rounded-full bg-white text-black shadow-none hover:bg-white/90 disabled:bg-white/30 disabled:text-black/50"
                   aria-label="Ask"
                   disabled={!question.trim()}
                   onClick={() => submit()}
@@ -272,7 +272,7 @@ export function AskComposer({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-2 pt-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-2 pt-1.5">
             <PopoverAnchor asChild>
               <Button
                 type="button"

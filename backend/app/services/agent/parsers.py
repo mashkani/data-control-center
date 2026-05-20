@@ -57,12 +57,35 @@ def _result_preview_for_summary(result_json: dict[str, Any], max_chars: int) -> 
     return raw[: max_chars - 20] + "\n... (truncated)"
 
 
+def _format_answer_value(value: Any) -> str:
+    if value is None:
+        return "null"
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return str(value)
+
+
+def _row_preview(row: dict[str, Any], max_items: int = 3) -> str:
+    parts = [
+        f"{key}: {_format_answer_value(value)}"
+        for key, value in list(row.items())[:max_items]
+    ]
+    return "; ".join(parts)
+
+
 def _default_answer(draft: AgentSqlDraft, qres: QueryResult) -> str:
-    prefix = draft.explanation.strip() or "Query completed."
-    parts = [f"Returned {qres.row_count} row{'s' if qres.row_count != 1 else ''}."]
+    _ = draft
+    if qres.row_count == 0:
+        return "No matching rows were found."
+
     if qres.rows:
-        first = qres.rows[0]
-        preview = ", ".join(f"{k}={v}" for k, v in list(first.items())[:3])
-        if preview:
-            parts.append(f"Preview: {preview}.")
-    return f"{prefix}\n\n{' '.join(parts)}"
+        preview = _row_preview(qres.rows[0])
+        if qres.row_count == 1:
+            return f"{preview}." if preview else "Found 1 row."
+        return (
+            f"Found {qres.row_count} rows. First result: {preview}."
+            if preview
+            else f"Found {qres.row_count} rows."
+        )
+
+    return f"Found {qres.row_count} row{'s' if qres.row_count != 1 else ''}."

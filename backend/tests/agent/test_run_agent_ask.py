@@ -59,7 +59,7 @@ def test_run_agent_happy_path(registry_csv: DatasetRegistry) -> None:
     assert out.answer and "2" in out.answer
     assert out.sql and vw in (out.sql or "")
     assert out.query_result and out.query_result.row_count >= 1
-    assert len(calls) == 1
+    assert len(calls) == 2
 
 
 def test_run_agent_uses_requested_model(registry_csv: DatasetRegistry) -> None:
@@ -79,7 +79,7 @@ def test_run_agent_uses_requested_model(registry_csv: DatasetRegistry) -> None:
     )
     assert not out.error
     assert out.model == "llama3.2:3b"
-    assert seen_models == ["llama3.2:3b"]
+    assert seen_models == ["llama3.2:3b", "llama3.2:3b"]
 
 
 def test_run_agent_sql_retry_then_success(registry_csv: DatasetRegistry) -> None:
@@ -135,8 +135,11 @@ def test_run_agent_retries_empty_filtered_result(registry_csv: DatasetRegistry) 
                 f'{{"sql":"SELECT val FROM {vw} WHERE id IS NULL",'
                 '"explanation":"filtered"}}'
             )
-        assert "returned 0 rows" in messages[-1]["content"]
-        return f'{{"sql":"SELECT val FROM {vw}","explanation":"unfiltered"}}'
+        if n == 2:
+            assert "returned 0 rows" in messages[-1]["content"]
+            return f'{{"sql":"SELECT val FROM {vw}","explanation":"unfiltered"}}'
+        assert "Result preview" in messages[-1]["content"]
+        return '{"answer":"Values are 10 and 20."}'
 
     out = collect_ask_result(
         registry_csv,
@@ -167,7 +170,7 @@ def test_run_agent_does_not_retry_empty_unfiltered_result(registry_csv: DatasetR
     )
     assert not out.error
     assert out.query_result and out.query_result.row_count == 0
-    assert calls == 1
+    assert calls == 2
 
 
 def test_run_agent_invalid_json_retries(registry_csv: DatasetRegistry) -> None:
@@ -253,7 +256,8 @@ def test_run_agent_summary_bad_json(registry_csv: DatasetRegistry) -> None:
         ollama_call=fake_ollama,
     )
     assert not out.error
-    assert out.answer and "Summarization issue" in out.answer
+    assert out.answer and "Summarization" not in out.answer
+    assert out.answer == "n: 2."
 
 
 def test_run_agent_summary_http_error(registry_csv: DatasetRegistry) -> None:
@@ -275,7 +279,8 @@ def test_run_agent_summary_http_error(registry_csv: DatasetRegistry) -> None:
         ollama_call=fake_ollama,
     )
     assert not out.error
-    assert out.answer and "Summarization unavailable" in out.answer
+    assert out.answer and "Summarization" not in out.answer
+    assert out.answer == "n: 2."
 
 
 def test_run_agent_summary_oserror_fallback(registry_csv: DatasetRegistry) -> None:
@@ -297,7 +302,8 @@ def test_run_agent_summary_oserror_fallback(registry_csv: DatasetRegistry) -> No
         ollama_call=fake_ollama,
     )
     assert not out.error
-    assert out.answer and "Summarization unavailable" in out.answer
+    assert out.answer and "Summarization" not in out.answer
+    assert out.answer == "n: 2."
 
 
 def test_collect_ask_result_conversation_not_found(registry_csv: DatasetRegistry) -> None:
