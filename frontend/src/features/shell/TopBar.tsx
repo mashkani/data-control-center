@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import {
   HelpCircle,
+  LineChart,
   Loader2,
   Menu,
   MessageCircle,
@@ -28,6 +29,7 @@ import { cn } from '@/lib/utils'
 const NAV: Array<{ to: string; label: string; icon: LucideIcon; end?: boolean }> = [
   { to: '/columns', label: 'Columns', icon: Table2, end: true },
   { to: '/samples', label: 'Samples', icon: Rows3 },
+  { to: '/charts', label: 'Charts', icon: LineChart },
   { to: '/ask', label: 'Ask', icon: MessageCircle },
   { to: '/sql', label: 'SQL', icon: Terminal },
 ]

@@ -825,6 +825,36 @@ def test_sample_rows_maps_duckdb_bad_request(client, tmp_path, monkeypatch) -> N
     assert res.json()["error"]["code"] == "BAD_REQUEST"
 
 
+def test_sample_rows_maps_missing_source_to_sanitized_bad_request(client, tmp_path, monkeypatch) -> None:
+    csv = tmp_path / "missing-source.csv"
+    csv.write_text("a\n1\n")
+    did = client.post("/api/datasets/register-file", json={"path": str(csv)}).json()["dataset_id"]
+
+    class BadCtx:
+        def __enter__(self):
+            class Con:
+                def execute(self, sql: str):
+                    if sql.startswith("SET statement_timeout"):
+                        return None
+
+                    import duckdb
+
+                    raise duckdb.Error('IO Error: No files found that match the pattern "/private/data/missing.csv"')
+
+            return Con()
+
+        def __exit__(self, exc_type, exc, tb):  # noqa: ANN001
+            return False
+
+    monkeypatch.setattr(client.app.state.workspace, "read_db", lambda: BadCtx())
+    res = client.get(f"/api/datasets/{did}/sample?page=1&page_size=5")
+    body = res.json()
+    assert res.status_code == 400
+    assert body["error"]["code"] == "BAD_REQUEST"
+    assert body["error"]["message"] == "Dataset source file is unavailable. Re-upload or unregister the dataset."
+    assert "/private" not in body["error"]["message"]
+
+
 def test_sample_rows_raises_on_timeout_setup_failure(client, tmp_path, monkeypatch) -> None:
     csv = tmp_path / "sample.csv"
     csv.write_text("a\n1\n")

@@ -11,6 +11,7 @@ request/response shapes and **`DCC_*`** settings, see
 - [Getting data in](#getting-data-in)
 - [Profiles and jobs](#profiles-and-jobs)
 - [SQL tab](#sql-tab)
+- [Charts tab](#charts-tab)
 - [Ask tab](#ask-tab)
 - [Keyboard shortcuts](#keyboard-shortcuts)
 
@@ -38,6 +39,10 @@ at least one registered view when datasets exist.
 **Unregister:** Use the sidebar trash action or **`DELETE /api/datasets/{dataset_id}`**.
 This drops the DuckDB view, clears cached profile state, and deletes app-owned upload
 copies. Externally registered source files are never deleted.
+
+If Samples, SQL, or Charts report that the dataset source file is unavailable, the
+registered dataset points at a local file that the workspace can no longer read. Re-upload
+the file, or unregister the stale dataset and register it again.
 
 ## Profiles and jobs
 
@@ -81,6 +86,26 @@ the UI keeps the sampled value and labels it using profile metadata.
 - **Results grid:** Sortable columns, resizable widths, sticky **#** index, multi-cell
   selection (drag or **Shift+arrow**), **⌘/Ctrl+C** as **TSV**, **Copy JSON**,
   **Export CSV**, double-click for full cell value. Large result sets use virtualized scrolling.
+
+## Charts tab
+
+Use **Charts** to build a multi-variable line chart for the active dataset without writing
+SQL by hand. The tab uses the existing local read-only query path, so chart queries stay
+inside the same workspace guardrails as the SQL tab.
+
+- **Defaults:** The builder picks the primary temporal column for the X axis when profile
+  inference finds one, then preselects likely numeric measures for Y series.
+- **Variables:** Choose one X column and one or more numeric Y variables. Each selected
+  Y variable renders as a separate line.
+- **Aggregation:** Use **Average**, **Sum**, **Minimum**, or **Maximum** with optional time
+  buckets such as day, month, quarter, or year. Choose **None** to plot raw rows ordered by X.
+  Buckets are available for continuous datetime columns; discrete periods such as **year**
+  group directly by their value.
+- **Display controls:** Customize title, axis labels, legend, smoothing, point markers,
+  and whether line segments connect across null values.
+- **Run chart:** Settings do not query automatically. Click **Run chart** when ready.
+  If the result is truncated at the chart row limit, the preview shows a truncation warning.
+- **SQL:** Use the **SQL** action to open the generated read-only query in the SQL tab.
 
 ## Ask tab
 
@@ -149,5 +174,5 @@ a token via **`GET /api/local-session`** or pin **`DCC_LOCAL_API_TOKEN`** — se
 | **⌘/Ctrl+K** | Command palette |
 | **?** | Shortcuts sheet |
 | **/** | Focus dataset search |
-| **g** then **c** / **s** / **a** / **y** | Jump to Columns / Samples / Ask / SQL |
+| **g** then **c** / **s** / **h** / **a** / **y** | Jump to Columns / Samples / Charts / Ask / SQL |
 | **r** | Refresh cached queries |

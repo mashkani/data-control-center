@@ -7,6 +7,7 @@ const ROWS: Array<{ keys: string; action: string }> = [
   { keys: '/', action: 'Focus dataset search in sidebar' },
   { keys: 'g c', action: 'Go to Columns' },
   { keys: 'g s', action: 'Go to Samples' },
+  { keys: 'g h', action: 'Go to Charts' },
   { keys: 'g a', action: 'Go to Ask' },
   { keys: 'g y', action: 'Go to SQL' },
   { keys: 'r', action: 'Invalidate queries / soft refresh' },

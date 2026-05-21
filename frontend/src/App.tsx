@@ -11,6 +11,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { DatasetSidebar } from '@/features/datasets/DatasetSidebar'
 import { DatasetDropzone } from '@/features/datasets/DatasetDropzone'
 import { AskPage } from '@/features/ask/AskPage'
+import { ChartsPage } from '@/features/charts/ChartsPage'
 import { ColumnsPage } from '@/features/columns/ColumnsPage'
 import { SamplesPage } from '@/features/samples/SamplesPage'
 import { QueryPage } from '@/features/query/QueryPage'
@@ -63,6 +64,7 @@ function RoutedPages() {
       <Route path="/columns" element={<ColumnsPage />} />
       <Route path="/quality" element={<Navigate to="/columns" replace />} />
       <Route path="/samples" element={<SamplesPage />} />
+      <Route path="/charts" element={<ChartsPage />} />
       <Route path="/ask" element={<AskPage />} />
       <Route path="/sql" element={<QueryPage />} />
     </Routes>

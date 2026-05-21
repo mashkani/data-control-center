@@ -26,6 +26,13 @@ def _settings(tmp_path: Path) -> Settings:
     )
 
 
+def _invalidated_duckdb_error() -> duckdb.FatalException:
+    return duckdb.FatalException(
+        "FATAL Error: Failed: database has been invalidated because of a previous fatal error. "
+        "The database must be restarted prior to being used again."
+    )
+
+
 def test_sanitize_sql_identifier_ok() -> None:
     assert sanitize_sql_identifier("v_ds_001") == "v_ds_001"
 
@@ -169,6 +176,36 @@ def test_profile_history_pruned_to_fifty(tmp_path: Path) -> None:
         assert hist[0]["rows"] == 54
     finally:
         ws.close()
+
+
+def test_workspace_schema_drops_obsolete_profile_history_index(tmp_path: Path) -> None:
+    settings = _settings(tmp_path)
+    ws = Workspace(settings)
+    ws.close()
+
+    con = duckdb.connect(str(settings.workspace_db_path))
+    try:
+        con.execute(
+            """
+            CREATE INDEX dcc_profile_history_ds_created
+            ON dcc_profile_history (dataset_id, created_at DESC)
+            """
+        )
+    finally:
+        con.close()
+
+    ws2 = Workspace(settings)
+    try:
+        row = ws2.connection.execute(
+            """
+            SELECT index_name
+            FROM duckdb_indexes()
+            WHERE index_name = 'dcc_profile_history_ds_created'
+            """
+        ).fetchone()
+        assert row is None
+    finally:
+        ws2.close()
 
 
 def test_saved_query_crud(tmp_path: Path) -> None:
@@ -477,6 +514,115 @@ def test_workspace_recovery_backup_suffix_avoids_collisions(
 
 def test_recoverable_open_error_rejects_non_duckdb_exception() -> None:
     assert not _is_recoverable_open_error(RuntimeError("boom"))
+
+
+def test_read_pool_reopens_after_invalidated_database(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class FakeCon:
+        def __init__(self, *, fail: bool = False) -> None:
+            self.fail = fail
+            self.closed = False
+
+        def execute(self, _sql: str):
+            if self.fail:
+                raise _invalidated_duckdb_error()
+            return self
+
+        def fetchone(self):
+            return (1,)
+
+        def close(self) -> None:
+            self.closed = True
+
+    initial_writer = FakeCon()
+    failing_reader = FakeCon(fail=True)
+    replacement_writer = FakeCon()
+    replacement_reader = FakeCon()
+    connections = [initial_writer, failing_reader, replacement_writer, replacement_reader]
+
+    def fake_connect(self: WorkspaceEngine):
+        del self
+        return connections.pop(0)
+
+    settings = Settings(
+        workspace_db_path=tmp_path / "w.duckdb",
+        allow_arbitrary_registration_paths=True,
+        db_reader_pool_size=1,
+    )
+    monkeypatch.setattr(WorkspaceEngine, "_connect_database", fake_connect)
+    ws = WorkspaceEngine(settings)
+
+    with pytest.raises(duckdb.FatalException, match="database has been invalidated"):
+        with ws.read_db() as con:
+            con.execute("SELECT 1")
+
+    assert initial_writer.closed
+    assert failing_reader.closed
+    with ws.read_db() as con:
+        assert con.execute("SELECT 1").fetchone() == (1,)
+    ws.close()
+    assert replacement_writer.closed
+    assert replacement_reader.closed
+
+
+def test_writer_reopens_after_invalidated_database(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class FakeCon:
+        def __init__(self, *, fail: bool = False) -> None:
+            self.fail = fail
+            self.closed = False
+
+        def execute(self, _sql: str):
+            if self.fail:
+                raise _invalidated_duckdb_error()
+            return self
+
+        def fetchone(self):
+            return (1,)
+
+        def close(self) -> None:
+            self.closed = True
+
+    failing_writer = FakeCon(fail=True)
+    initial_reader = FakeCon()
+    replacement_writer = FakeCon()
+    replacement_reader = FakeCon()
+    connections = [failing_writer, initial_reader, replacement_writer, replacement_reader]
+
+    def fake_connect(self: WorkspaceEngine):
+        del self
+        return connections.pop(0)
+
+    settings = Settings(
+        workspace_db_path=tmp_path / "w.duckdb",
+        allow_arbitrary_registration_paths=True,
+        db_reader_pool_size=1,
+    )
+    monkeypatch.setattr(WorkspaceEngine, "_connect_database", fake_connect)
+    ws = WorkspaceEngine(settings)
+
+    with pytest.raises(duckdb.FatalException, match="database has been invalidated"):
+        with ws.lock_db() as con:
+            con.execute("SELECT 1")
+
+    assert failing_writer.closed
+    assert initial_reader.closed
+    with ws.lock_db() as con:
+        assert con.execute("SELECT 1").fetchone() == (1,)
+    ws.close()
+    assert replacement_writer.closed
+    assert replacement_reader.closed
+
+
+def test_close_connection_ignores_close_errors() -> None:
+    class BadClose:
+        def close(self) -> None:
+            raise RuntimeError("already closed")
+
+    ws = WorkspaceEngine.__new__(WorkspaceEngine)
+    ws._close_connection(BadClose())  # type: ignore[arg-type]
 
 
 def test_backup_corrupt_workspace_files_noop_when_missing(tmp_path: Path) -> None:

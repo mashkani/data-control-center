@@ -118,8 +118,22 @@ describe('App', () => {
     await user.click(screen.getByRole('link', { name: /Columns/i }))
     await waitFor(() => expect(screen.getByPlaceholderText(/Column name/)).toBeInTheDocument())
 
+    await user.click(screen.getByRole('link', { name: /Charts/i }))
+    await waitFor(() => expect(screen.getByRole('button', { name: /Run chart/i })).toBeInTheDocument())
+
     await user.click(screen.getByRole('link', { name: /Ask/i }))
     await waitFor(() => expect(screen.getByPlaceholderText(/plain language/i)).toBeInTheDocument())
+  })
+
+  it('navigates to Charts from the command palette', async () => {
+    const user = userEvent.setup()
+    renderApp()
+    await waitFor(() => expect(useUiStore.getState().activeDatasetId).toBe('ds_001'))
+
+    await user.click(screen.getByRole('button', { name: /Search/i }))
+    await user.click(screen.getByRole('option', { name: /Charts/i }))
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /Run chart/i })).toBeInTheDocument())
   })
 
   it('shows loading skeletons while datasets are loading', () => {

@@ -28,6 +28,13 @@ def _is_recoverable_open_error(exc: Exception) -> bool:
     return "Failure while replaying WAL file" in msg and "GetDefaultDatabase" in msg
 
 
+def _is_invalidated_database_error(exc: Exception) -> bool:
+    if not isinstance(exc, duckdb.Error):
+        return False
+    msg = str(exc).lower()
+    return "database has been invalidated" in msg and "previous fatal error" in msg
+
+
 class WorkspaceEngine:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
@@ -85,15 +92,50 @@ class WorkspaceEngine:
     @contextmanager
     def lock_db(self) -> Iterator[duckdb.DuckDBPyConnection]:
         with self._db_lock:
-            yield self._writer_con
+            try:
+                yield self._writer_con
+            except Exception as exc:
+                if _is_invalidated_database_error(exc):
+                    self._reopen_connections_locked()
+                raise
 
     @contextmanager
     def read_db(self) -> Iterator[duckdb.DuckDBPyConnection]:
         con = self._read_pool.get()
+        keep_connection = True
         try:
             yield con
+        except Exception as exc:
+            if _is_invalidated_database_error(exc):
+                keep_connection = False
+                self._close_connection(con)
+                with self._db_lock:
+                    self._reopen_connections_locked()
+            raise
         finally:
-            self._read_pool.put(con)
+            if keep_connection:
+                self._read_pool.put(con)
+
+    def _close_connection(self, con: duckdb.DuckDBPyConnection) -> None:
+        try:
+            con.close()
+        except Exception:
+            pass
+
+    def _reopen_connections_locked(self) -> None:
+        self._close_connection(self._writer_con)
+        drained: list[duckdb.DuckDBPyConnection] = []
+        while True:
+            try:
+                drained.append(self._read_pool.get_nowait())
+            except queue.Empty:
+                break
+        for con in drained:
+            self._close_connection(con)
+        self._writer_con = self._open_writer_connection()
+        self._read_pool = queue.SimpleQueue()
+        for _ in range(self._read_pool_size):
+            self._read_pool.put(self._connect_database())
 
     def close(self) -> None:
         with self._db_lock:

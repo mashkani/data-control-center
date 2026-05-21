@@ -83,6 +83,7 @@ export function useGlobalShortcuts() {
         }
         if (k === 'c') go('/columns')
         else if (k === 's') go('/samples')
+        else if (k === 'h') go('/charts')
         else if (k === 'a') go('/ask')
         else if (k === 'y') go('/sql')
         return

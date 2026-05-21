@@ -1,4 +1,5 @@
 import {
+  LineChart,
   MessageCircle,
   Rows3,
   Table2,
@@ -71,6 +72,9 @@ export function CommandPalette() {
               </Command.Item>
               <Command.Item value="samples page" onSelect={() => go('/samples')}>
                 <Rows3 /> Samples
+              </Command.Item>
+              <Command.Item value="charts page" onSelect={() => go('/charts')}>
+                <LineChart /> Charts
               </Command.Item>
               <Command.Item value="ask page" onSelect={() => go('/ask')}>
                 <MessageCircle /> Ask

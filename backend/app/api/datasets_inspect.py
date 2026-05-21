@@ -10,6 +10,7 @@ from fastapi import APIRouter, Query, Response
 from app.api.deps import RegistryDep, SettingsDep, WorkspaceDep
 from app.errors import CODES, to_http_error
 from app.models.api import DatasetSummary
+from app.services.source_errors import MISSING_DATASET_SOURCE_MESSAGE, is_missing_dataset_source_error
 from app.services.workspace import sanitize_sql_identifier
 
 logger = logging.getLogger(__name__)
@@ -20,6 +21,12 @@ router = APIRouter()
 def _sample_rows_http_error(exc: Exception):
     msg = str(exc).lower()
     if isinstance(exc, duckdb.Error):
+        if is_missing_dataset_source_error(exc):
+            return to_http_error(
+                status_code=400,
+                code=CODES.BAD_REQUEST,
+                message=MISSING_DATASET_SOURCE_MESSAGE,
+            )
         if "timeout" in msg or "interrupted" in msg:
             return to_http_error(
                 status_code=408,

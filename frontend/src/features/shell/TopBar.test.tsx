@@ -131,4 +131,10 @@ describe('TopBar', () => {
     expect(columns).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('link', { name: /Samples/i })).not.toHaveAttribute('aria-current')
   })
+
+  it('marks Charts active when the charts route is selected', async () => {
+    wrap(<TopBar />, ['/charts'])
+    const charts = await waitFor(() => screen.getByRole('link', { name: /Charts/i }))
+    expect(charts).toHaveAttribute('aria-current', 'page')
+  })
 })

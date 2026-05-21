@@ -92,9 +92,10 @@ EXPECTED_TABLES: dict[str, tuple[ColumnSpec, ...]] = {
 
 EXPECTED_INDEXES: dict[str, tuple[str, bool]] = {
     "dcc_datasets_view_name_unique": ("dcc_datasets", True),
-    "dcc_profile_history_ds_created": ("dcc_profile_history", False),
     "dcc_ask_turns_conv_seq": ("dcc_ask_turns", False),
 }
+
+OBSOLETE_INDEXES = ("dcc_profile_history_ds_created",)
 
 
 def _unsupported(message: str) -> UnsupportedWorkspaceSchemaError:
@@ -200,12 +201,6 @@ def create_workspace_schema(con: duckdb.DuckDBPyConnection) -> None:
     )
     con.execute(
         """
-        CREATE INDEX dcc_profile_history_ds_created
-        ON dcc_profile_history (dataset_id, created_at DESC);
-        """
-    )
-    con.execute(
-        """
         CREATE TABLE dcc_saved_queries (
           saved_id VARCHAR PRIMARY KEY,
           name VARCHAR NOT NULL,
@@ -292,10 +287,16 @@ def _drop_legacy_schema_version_table(con: duckdb.DuckDBPyConnection) -> None:
     logger.info("Removed obsolete schema_version table from workspace database")
 
 
+def _drop_obsolete_indexes(con: duckdb.DuckDBPyConnection) -> None:
+    for index_name in OBSOLETE_INDEXES:
+        con.execute(f"DROP INDEX IF EXISTS {index_name}")
+
+
 class WorkspaceSchema:
     def initialize(self, con: duckdb.DuckDBPyConnection, settings: Settings) -> None:
         del settings  # reserved for future init options
         if _existing_dcc_tables(con):
+            _drop_obsolete_indexes(con)
             _validate_schema(con)
         else:
             create_workspace_schema(con)

@@ -50,6 +50,10 @@ describe('useGlobalShortcuts', () => {
     fireEvent.keyDown(window, { key: 'a' })
     expect(screen.getByTestId('path')).toHaveTextContent('/ask')
 
+    fireEvent.keyDown(window, { key: 'g' })
+    fireEvent.keyDown(window, { key: 'h' })
+    expect(screen.getByTestId('path')).toHaveTextContent('/charts')
+
     fireEvent.keyDown(window, { key: 'r' })
     expect(invalidateSpy).toHaveBeenCalled()
   })

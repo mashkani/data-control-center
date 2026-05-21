@@ -1,6 +1,6 @@
 # Data Control Center — Frontend
 
-React + Vite + TypeScript UI for browsing datasets, profiles, and SQL.
+React + Vite + TypeScript UI for browsing datasets, profiles, charts, and SQL.
 
 Product usage (tabs, shortcuts, Ask): [`docs/user-guide.md`](../docs/user-guide.md).
 
@@ -41,7 +41,7 @@ editing [`backend/app/`](../backend/app) (see root **`Makefile`**: `--reload-dir
 
 ## Layout and conventions
 
-- **`src/features/`** — route-level pages (columns, samples, SQL, ask). The app
+- **`src/features/`** — route-level pages (columns, samples, charts, SQL, ask). The app
   opens on **Columns** by default; see [user guide](../docs/user-guide.md#profiles-and-jobs).
 - **`src/api/`** — typed fetch client ([`client.ts`](src/api/client.ts)) and DTOs
   ([`types.ts`](src/api/types.ts)).

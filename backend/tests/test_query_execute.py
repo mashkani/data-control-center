@@ -220,3 +220,28 @@ def test_execute_query_timeout_error_message(
         QueryRequest(sql=f"SELECT * FROM {registry_with_view.list_all()[0].view_name}"),
     )
     assert out.error == "Query timed out."
+
+
+def test_execute_query_missing_source_error_is_sanitized(
+    registry_with_view: DatasetRegistry, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class Con:
+        def __enter__(self):  # noqa: ANN204
+            return self
+
+        def __exit__(self, exc_type, exc, tb):  # noqa: ANN001, ANN204
+            return False
+
+        def execute(self, sql: str):
+            if sql.startswith("SET statement_timeout"):
+                return None
+            raise RuntimeError('IO Error: No files found that match the pattern "/private/data/missing.parquet"')
+
+    monkeypatch.setattr(registry_with_view.workspace, "read_db", lambda: Con())
+    out = execute_query(
+        registry_with_view,
+        Settings(),
+        QueryRequest(sql=f"SELECT * FROM {registry_with_view.list_all()[0].view_name}"),
+    )
+    assert out.error == "Dataset source file is unavailable. Re-upload or unregister the dataset."
+    assert "/private" not in (out.error or "")
