@@ -200,4 +200,3 @@ export function ColumnsToolbar({
   )
 }
 
-export { ColumnsToolbar as ColumnsFilters }

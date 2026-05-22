@@ -96,10 +96,19 @@ pull requests to **`main`** and **`master`**, matching **`make check`**.
 push to **`main`** (not `master`). Renovate updates npm, GitHub Actions, and Python
 dependencies.
 
+### Chart SQL fixtures
+
+Charts SQL is generated in the frontend (`chartSql.ts` / `chartUtils` barrel) and executed by the backend query API. When you change chart SQL builders, update **both**:
+
+- frontend tests in [`frontend/src/features/charts/chartSql.test.ts`](frontend/src/features/charts/chartSql.test.ts), and
+- backend execution tests in [`backend/tests/test_chart_sql_execute.py`](backend/tests/test_chart_sql_execute.py)
+
+Each golden SQL block in the backend file includes a `mirrors frontend …` comment naming the matching frontend test. Use the same dataset column names as [`backend/tests/fixtures/chart_orders.csv`](backend/tests/fixtures/chart_orders.csv).
+
 ### Coverage
 
 - **Backend:** pytest-cov in [`backend/pyproject.toml`](backend/pyproject.toml) fails below **100%** line coverage on `app/`. HTML report: `uv run pytest --cov=app --cov-report=html` → `backend/htmlcov/index.html`.
-- **Frontend:** Vitest thresholds in [`frontend/vitest.config.ts`](frontend/vitest.config.ts) (**`COVERAGE_BASELINE`** 92% lines/statements; see excludes there).
+- **Frontend:** Vitest thresholds in [`frontend/vitest.config.ts`](frontend/vitest.config.ts) (**`COVERAGE_BASELINE`** 94% lines/statements; see excludes there).
 
 Security and dependency checks for release hygiene:
 

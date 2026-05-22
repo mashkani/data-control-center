@@ -3,15 +3,10 @@ import type { QueryResult } from '@/api/types'
 import { mkColumn, mkProfile } from '@/test/profileFixtures'
 import {
   buildBarChartOption,
-  buildBarChartSql,
   buildChartOption,
-  buildChartSql,
   buildHistogramChartOption,
-  buildHistogramChartSql,
   buildLineChartOption,
-  buildLineChartSql,
   buildScatterChartOption,
-  buildScatterChartSql,
   createDefaultChartSpec,
   getCategoryColumnNames,
   getDefaultCategoryColumn,
@@ -116,8 +111,6 @@ describe('chartUtils', () => {
     expect(spec.xColumn).toBe('year')
     expect(spec.xColumnBucketable).toBe(false)
     expect(spec.bucket).toBe('none')
-    expect(buildLineChartSql(spec, 'player_ratings')).not.toContain('date_trunc')
-    expect(buildLineChartSql(spec, 'player_ratings')).toContain('group by 1')
   })
 
   it('validates missing dataset, x axis, and y variables', () => {
@@ -131,26 +124,6 @@ describe('chartUtils', () => {
     expect(validateChartSpec(baseSpec({ chartType: 'histogram', valueColumn: '' }), 'orders').reason).toMatch(/numeric variable/i)
     expect(validateChartSpec(baseSpec({ chartType: 'histogram', binCount: 0 }), 'orders').reason).toMatch(/bins/i)
     expect(validateChartSpec(baseSpec({ chartType: 'histogram' }), 'orders')).toEqual({ valid: true, reason: null })
-  })
-
-  it('builds quoted aggregate SQL with bucketing', () => {
-    const sql = buildLineChartSql(baseSpec(), 'sales orders')
-
-    expect(sql).toContain("date_trunc('month', \"order date\") as x")
-    expect(sql).toContain('avg("gross revenue") as "gross revenue"')
-    expect(sql).toContain('from "sales orders"')
-    expect(sql).toContain('group by 1')
-    expect(sql).toContain('limit 5000')
-  })
-
-  it('builds unaggregated SQL without grouping or bucket expression', () => {
-    const sql = buildLineChartSql(baseSpec({ aggregation: 'none', bucket: 'none' }), 'orders')
-
-    expect(sql).toContain('"order date" as x')
-    expect(sql).toContain('"gross revenue"')
-    expect(sql).toContain('profit')
-    expect(sql).not.toContain('group by')
-    expect(sql).not.toContain('date_trunc')
   })
 
   it('uses a time axis for raw continuous datetime charts', () => {
@@ -184,31 +157,8 @@ describe('chartUtils', () => {
     ).toEqual(expect.objectContaining({ min: 40, max: 50, scale: true }))
   })
 
-  it('builds filtered SQL with escaped literals and richer aggregations', () => {
-    const sql = buildLineChartSql(
-      baseSpec({
-        aggregation: 'median',
-        filters: [
-          { id: 'f1', column: 'region', operator: 'eq', value: "Bob's" },
-          { id: 'f2', column: 'team', operator: 'in', value: 'A, B' },
-        ],
-      }),
-      'orders',
-    )
-
-    expect(sql).toContain('median("gross revenue") as "gross revenue"')
-    expect(sql).toContain("region = 'Bob''s'")
-    expect(sql).toContain("team in ('A', 'B')")
-  })
-
-  it('builds split-by SQL and maps split rows into series values', () => {
+  it('maps split-by rows into series values', () => {
     const spec = baseSpec({ yColumns: ['rating'], splitBy: 'team', aggregation: 'avg' })
-    const sql = buildLineChartSql(spec, 'ratings')
-    expect(sql).toContain('team as split')
-    expect(sql).toContain('avg(rating) as value')
-    expect(sql).toContain('group by')
-    expect(sql).toContain('1,\n    2')
-
     const result: QueryResult = {
       columns: [{ name: 'x', type: null }, { name: 'split', type: null }, { name: 'value', type: null }],
       rows: [
@@ -220,48 +170,6 @@ describe('chartUtils', () => {
       error: null,
     }
     expect(queryResultToChartData(result, spec)).toEqual([{ x: 2025, values: { A: 10, B: 12 } }])
-  })
-
-  it('builds histogram SQL with bins, filters, split groups, and zero-count joins', () => {
-    const sql = buildHistogramChartSql(
-      baseSpec({
-        chartType: 'histogram',
-        valueColumn: 'gross revenue',
-        binCount: 8,
-        splitBy: 'region',
-        filters: [{ id: 'f1', column: 'team', operator: 'eq', value: 'East' }],
-      }),
-      'sales orders',
-    )
-
-    expect(sql).toContain('with')
-    expect(sql).toContain('range(8)')
-    expect(sql).toContain('min("gross revenue") as min_v')
-    expect(sql).toContain('greatest')
-    expect(sql).toContain('least')
-    expect(sql).toContain('select distinct')
-    expect(sql.toLowerCase()).toContain('cast(region as varchar) as split')
-    expect(sql).toContain('left join _dcc_counts')
-    expect(sql).toContain("team = 'East'")
-    expect(sql).toContain('or _dcc_bins.bin_index = 0')
-    expect(buildChartSql(baseSpec({ chartType: 'histogram' }), 'orders')).toContain('range(12)')
-  })
-
-  it('builds integer histogram SQL with whole-number inclusive bins', () => {
-    const spec = baseSpec({
-      chartType: 'histogram',
-      valueColumn: 'standing_tackle',
-      valueColumnInteger: true,
-      binCount: 12,
-    })
-    const sql = buildHistogramChartSql(spec, 'player_ratings')
-
-    expect(sql.toLowerCase()).toContain('cast(min(standing_tackle) as bigint) as min_v')
-    expect(sql).toContain('least(12, max_v - min_v + 1) as bucket_count')
-    expect(sql).toContain('base_width')
-    expect(sql).toContain('extra_bins')
-    expect(sql).toContain('between _dcc_ranges.lower_bound and _dcc_ranges.upper_bound')
-    expect(sql).not.toContain('nullif(_dcc_stats.max_v - _dcc_stats.min_v')
   })
 
   it('maps histogram rows into grouped chart data and renders bar options', () => {
@@ -375,45 +283,7 @@ describe('chartUtils', () => {
     ).toEqual({ valid: true, reason: null })
   })
 
-  it('builds bar SQL for count-only and aggregated measures with top N', () => {
-    const countSql = buildBarChartSql(
-      baseSpec({ chartType: 'bar', xColumn: 'region', yColumns: [], aggregation: 'count', topN: 10 }),
-      'orders',
-    )
-    expect(countSql.toLowerCase()).toContain('_dcc_bar_ranked')
-    expect(countSql.toLowerCase()).toContain('count(*)')
-    expect(countSql.toLowerCase()).toMatch(/limit\s+10/)
-    expect(countSql).toContain('group by 1')
-    expect(countSql.toLowerCase()).toContain('max(_dcc_bar_ranked.sort_value)')
-
-    const sumSql = buildBarChartSql(
-      baseSpec({ chartType: 'bar', xColumn: 'region', yColumns: ['gross revenue'], aggregation: 'sum', topN: 15 }),
-      'orders',
-    )
-    expect(sumSql).toContain('sum("gross revenue")')
-    expect(sumSql.toLowerCase()).toMatch(/limit\s+15/)
-    expect(sumSql.toLowerCase()).toContain('max(_dcc_bar_ranked.sort_value)')
-    expect(buildChartSql(baseSpec({ chartType: 'bar', xColumn: 'region', yColumns: [], aggregation: 'count' }), 'orders')).toContain(
-      'count(*)',
-    )
-  })
-
-  it('builds scatter SQL without grouping and maps scatter rows', () => {
-    const sql = buildScatterChartSql(
-      baseSpec({ chartType: 'scatter', xColumn: 'gross revenue', yColumns: ['profit'], aggregation: 'none' }),
-      'orders',
-    )
-    expect(sql).toContain('"gross revenue" as x')
-    expect(sql.toLowerCase()).toContain('profit as y')
-    expect(sql).not.toContain('group by')
-    expect(sql).toContain('limit 5000')
-
-    const splitSql = buildScatterChartSql(
-      baseSpec({ chartType: 'scatter', xColumn: 'gross revenue', yColumns: ['profit'], splitBy: 'region', aggregation: 'none' }),
-      'orders',
-    )
-    expect(splitSql.toLowerCase()).toContain('cast(region as varchar) as split')
-
+  it('maps scatter rows and renders scatter options', () => {
     const result: QueryResult = {
       columns: [{ name: 'x', type: null }, { name: 'y', type: null }],
       rows: [
@@ -461,7 +331,7 @@ describe('chartUtils', () => {
     )
   })
 
-  it('builds bar split SQL and grouped bar chart options', () => {
+  it('renders grouped bar chart options for split series', () => {
     const spec = baseSpec({
       chartType: 'bar',
       xColumn: 'region',
@@ -470,11 +340,6 @@ describe('chartUtils', () => {
       splitBy: 'team',
       topN: 5,
     })
-    const sql = buildBarChartSql(spec, 'orders')
-    expect(sql.toLowerCase()).toContain('cast(team as varchar) as split')
-    expect(sql.toLowerCase()).toMatch(/limit\s+5/)
-    expect(sql.toLowerCase()).toContain('max(_dcc_bar_ranked.sort_value)')
-
     const result: QueryResult = {
       columns: [{ name: 'x', type: null }, { name: 'split', type: null }, { name: 'value', type: null }],
       rows: [

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from app.config import Settings
 from app.models.api import QueryRequest, QueryResult, QueryResultColumn
 from app.services.registry import DatasetRegistry
-from app.services.source_errors import MISSING_DATASET_SOURCE_MESSAGE, is_missing_dataset_source_error
+from app.services.query_errors import MSG_QUERY_TIMEOUT, sanitize_query_execution_error
 from app.services.sql_validate import validate_workspace_sql
 from app.telemetry import emit
 
@@ -82,7 +82,5 @@ def execute_query(
             error=type(e).__name__,
         )
         if timeout:
-            return QueryResult(columns=[], rows=[], row_count=0, error="Query timed out.")
-        if is_missing_dataset_source_error(e):
-            return QueryResult(columns=[], rows=[], row_count=0, error=MISSING_DATASET_SOURCE_MESSAGE)
-        return QueryResult(columns=[], rows=[], row_count=0, error="Query failed.")
+            return QueryResult(columns=[], rows=[], row_count=0, error=MSG_QUERY_TIMEOUT)
+        return QueryResult(columns=[], rows=[], row_count=0, error=sanitize_query_execution_error(e))

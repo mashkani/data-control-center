@@ -8,6 +8,10 @@ stable release. Maintainer tagging steps: [`docs/RELEASE.md`](docs/RELEASE.md).
 
 ## [Unreleased]
 
+### Breaking
+
+- Removed unused **`/api/saved-charts`** endpoints. Existing local workspaces drop the **`dcc_saved_charts`** table on next startup (any saved chart rows are discarded).
+
 ## [1.0.0] - 2026-05-20
 
 ### Upgrade from 0.1.0

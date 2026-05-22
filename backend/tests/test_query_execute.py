@@ -9,6 +9,7 @@ import pytest
 from app.config import Settings
 from app.models.api import QueryRequest
 from app.services.query import _apply_statement_timeout, execute_query
+from app.services.query_errors import MSG_BINDER_GROUPING, MSG_CATALOG, MSG_CONVERSION
 from app.services.registry import DatasetRegistry
 from app.services.workspace import Workspace
 
@@ -245,3 +246,51 @@ def test_execute_query_missing_source_error_is_sanitized(
     )
     assert out.error == "Dataset source file is unavailable. Re-upload or unregister the dataset."
     assert "/private" not in (out.error or "")
+
+
+def _patch_read_db_raises(registry: DatasetRegistry, monkeypatch: pytest.MonkeyPatch, message: str) -> None:
+    class Con:
+        def __enter__(self):  # noqa: ANN204
+            return self
+
+        def __exit__(self, exc_type, exc, tb):  # noqa: ANN001, ANN204
+            return False
+
+        def execute(self, sql: str):
+            if sql.startswith("SET statement_timeout"):
+                return None
+            raise RuntimeError(message)
+
+    monkeypatch.setattr(registry.workspace, "read_db", lambda: Con())
+
+
+def test_execute_query_binder_error_message(
+    registry_with_view: DatasetRegistry, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _patch_read_db_raises(
+        registry_with_view,
+        monkeypatch,
+        'Binder Error: column "x" must appear in the GROUP BY clause or must be part of an aggregate function.',
+    )
+    vw = registry_with_view.list_all()[0].view_name
+    out = execute_query(registry_with_view, Settings(), QueryRequest(sql=f"SELECT * FROM {vw}"))
+    assert out.error == MSG_BINDER_GROUPING
+    assert "/Volumes" not in (out.error or "")
+
+
+def test_execute_query_conversion_error_message(
+    registry_with_view: DatasetRegistry, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _patch_read_db_raises(registry_with_view, monkeypatch, "Conversion Error: Could not convert string to INT")
+    vw = registry_with_view.list_all()[0].view_name
+    out = execute_query(registry_with_view, Settings(), QueryRequest(sql=f"SELECT * FROM {vw}"))
+    assert out.error == MSG_CONVERSION
+
+
+def test_execute_query_catalog_error_message(
+    registry_with_view: DatasetRegistry, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _patch_read_db_raises(registry_with_view, monkeypatch, "Catalog Error: Table with name missing does not exist")
+    vw = registry_with_view.list_all()[0].view_name
+    out = execute_query(registry_with_view, Settings(), QueryRequest(sql=f"SELECT * FROM {vw}"))
+    assert out.error == MSG_CATALOG

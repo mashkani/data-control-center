@@ -6,8 +6,8 @@ import path from 'node:path'
 // Pragmatic omission: Vite bootstrap only (see plan).
 const coverageExclude = ['src/main.tsx', 'src/vite-env.d.ts']
 
-// Current baseline (92%). Raise toward 100% as UiUrlSync, hooks, and chart branches gain tests.
-const COVERAGE_BASELINE = 92
+// Current baseline (94%). Raise toward 100% as UiUrlSync, hooks, and chart branches gain tests.
+const COVERAGE_BASELINE = 94
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
