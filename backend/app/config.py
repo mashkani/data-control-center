@@ -5,6 +5,8 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+_GIB = 1024 * 1024 * 1024
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="DCC_", extra="ignore")
@@ -47,9 +49,9 @@ class Settings(BaseSettings):
 
     # Browser uploads are copied here, then registered with DuckDB
     upload_dir: Path = Path(".dcc_uploads")
-    upload_max_bytes_per_file: int = 256 * 1024 * 1024  # 256 MiB
+    upload_max_bytes_per_file: int = 2 * _GIB  # 2 GiB
     upload_max_files_per_batch: int = Field(default=50, ge=1, le=1000)
-    upload_max_batch_bytes: int = 512 * 1024 * 1024  # 512 MiB
+    upload_max_batch_bytes: int = 2 * _GIB  # 2 GiB (required for single max-size file uploads)
     upload_validate_parse: bool = True
     upload_orphan_ttl_hours: float = Field(default=24.0, ge=0.0)
 

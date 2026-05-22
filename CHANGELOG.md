@@ -8,6 +8,10 @@ stable release. Maintainer tagging steps: [`docs/RELEASE.md`](docs/RELEASE.md).
 
 ## [Unreleased]
 
+### Changed
+
+- Raised default browser upload limits to **2 GiB** per file and per batch (`DCC_UPLOAD_MAX_BYTES_PER_FILE`, `DCC_UPLOAD_MAX_BATCH_BYTES`).
+
 ### Breaking
 
 - Removed unused **`/api/saved-charts`** endpoints. Existing local workspaces drop the **`dcc_saved_charts`** table on next startup (any saved chart rows are discarded).

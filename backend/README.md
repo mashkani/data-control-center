@@ -59,8 +59,8 @@ Threat model: [`SECURITY.md`](../SECURITY.md).
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | **`DCC_UPLOAD_DIR`** | `.dcc_uploads` | App-owned upload copies (deleted on unregister) |
-| **`DCC_UPLOAD_MAX_BYTES_PER_FILE`** | 256 MiB | Per-file size limit |
-| **`DCC_UPLOAD_MAX_BATCH_BYTES`** | 512 MiB | Total batch size limit |
+| **`DCC_UPLOAD_MAX_BYTES_PER_FILE`** | 2 GiB | Per-file size limit |
+| **`DCC_UPLOAD_MAX_BATCH_BYTES`** | 2 GiB | Total batch size limit |
 | **`DCC_UPLOAD_MAX_FILES_PER_BATCH`** | `50` | Files per batch |
 | **`DCC_UPLOAD_VALIDATE_PARSE`** | `true` | Parser preflight on upload |
 | **`DCC_UPLOAD_ORPHAN_TTL_HOURS`** | `24` | Cleanup TTL for failed upload batches |
