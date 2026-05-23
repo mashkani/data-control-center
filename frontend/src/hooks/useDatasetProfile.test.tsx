@@ -2,24 +2,30 @@ import React from 'react'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ApiRequestError } from '@/api/client'
 import { useDatasetProfile } from '@/hooks/useDatasetProfile'
 import { mkProfile } from '@/test/profileFixtures'
 
 const h = vi.hoisted(() => ({
-  fetchDatasetProfile: vi.fn(),
+  fetchDatasetProfileOnce: vi.fn(),
   getJob: vi.fn(),
   refreshProfile: vi.fn(),
   cancelJob: vi.fn(),
 }))
 
-vi.mock('@/api/client', () => ({
-  api: {
-    fetchDatasetProfile: h.fetchDatasetProfile,
-    getJob: h.getJob,
-    refreshProfile: h.refreshProfile,
-    cancelJob: h.cancelJob,
-  },
-}))
+vi.mock('@/api/client', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('@/api/client')>()
+  return {
+    ...mod,
+    api: {
+      ...mod.api,
+      fetchDatasetProfileOnce: h.fetchDatasetProfileOnce,
+      getJob: h.getJob,
+      refreshProfile: h.refreshProfile,
+      cancelJob: h.cancelJob,
+    },
+  }
+})
 
 function wrapper({ children }: { children: React.ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -29,15 +35,33 @@ function wrapper({ children }: { children: React.ReactNode }) {
 describe('useDatasetProfile', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    h.fetchDatasetProfile.mockResolvedValue(mkProfile())
+    h.fetchDatasetProfileOnce.mockResolvedValue(mkProfile())
     h.getJob.mockResolvedValue({ job_id: 'j1', status: 'completed', kind: 'profile_refresh' })
     h.refreshProfile.mockResolvedValue({ job_id: 'j2', status: 'queued' })
+  })
+
+  it('queues job polling when profile is not ready', async () => {
+    h.fetchDatasetProfileOnce.mockRejectedValue(
+      new ApiRequestError('Profiling', 'PROFILE_NOT_READY', { job_id: 'j-pending' }),
+    )
+    h.getJob.mockResolvedValue({ job_id: 'j-pending', status: 'completed', kind: 'dataset_prepare' })
+    renderHook(() => useDatasetProfile('ds_1'), { wrapper })
+    await waitFor(() => expect(h.getJob).toHaveBeenCalled())
+    await waitFor(() => expect(h.fetchDatasetProfileOnce.mock.calls.length).toBeGreaterThanOrEqual(2))
+  })
+
+  it('surfaces generic fetch errors', async () => {
+    h.fetchDatasetProfileOnce.mockRejectedValue(new Error('e1'))
+    const { result } = renderHook(() => useDatasetProfile('ds_1'), { wrapper })
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect((result.current.error as Error).message).toBe('e1')
+    expect(result.current.isPendingProfile).toBe(false)
   })
 
   it('loads profile for dataset id', async () => {
     const { result } = renderHook(() => useDatasetProfile('ds_1'), { wrapper })
     await waitFor(() => expect(result.current.data).toBeDefined())
-    expect(h.fetchDatasetProfile).toHaveBeenCalledWith(
+    expect(h.fetchDatasetProfileOnce).toHaveBeenCalledWith(
       'ds_1',
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     )

@@ -58,7 +58,13 @@ export function SchemaDatasetBlock({
             />
           ) : null}
           <ul className="max-h-48 overflow-auto">
-            {pq.isPendingProfile && <li className="py-1 text-[hsl(var(--fg-muted))]">Profiling…</li>}
+            {pq.isPendingProfile && (
+              <li className="py-1 text-[hsl(var(--fg-muted))]">
+                {pq.jobProgress != null && pq.jobProgress > 0
+                  ? `Profiling… ${Math.round(pq.jobProgress * 100)}%`
+                  : 'Profiling…'}
+              </li>
+            )}
             {pq.isError && <li className="py-1 text-red-300">{(pq.error as Error).message}</li>}
             {filteredCols.map((c) => (
               <li key={c.name}>

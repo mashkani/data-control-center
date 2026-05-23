@@ -17,11 +17,29 @@ vi.mock('echarts', () => ({
   })),
 }))
 
-const h = vi.hoisted(() => ({ fetchDatasetProfile: vi.fn(), listDatasets: vi.fn() }))
+const h = vi.hoisted(() => ({
+  fetchDatasetProfile: vi.fn(),
+  fetchDatasetProfileOnce: vi.fn(),
+  listDatasets: vi.fn(),
+  getJob: vi.fn(),
+  refreshProfile: vi.fn(),
+  cancelJob: vi.fn(),
+}))
 
 vi.mock('@/api/client', async (importOriginal) => {
   const mod = await importOriginal<typeof import('@/api/client')>()
-  return { ...mod, api: { ...mod.api, fetchDatasetProfile: h.fetchDatasetProfile, listDatasets: h.listDatasets } }
+  return {
+    ...mod,
+    api: {
+      ...mod.api,
+      fetchDatasetProfile: h.fetchDatasetProfile,
+      fetchDatasetProfileOnce: h.fetchDatasetProfileOnce,
+      listDatasets: h.listDatasets,
+      getJob: h.getJob,
+      refreshProfile: h.refreshProfile,
+      cancelJob: h.cancelJob,
+    },
+  }
 })
 
 function wrap(ui: React.ReactElement) {
@@ -58,7 +76,7 @@ describe('ColumnsPage', () => {
         file_size_bytes: 1,
       },
     ])
-    h.fetchDatasetProfile.mockResolvedValue(
+    h.fetchDatasetProfileOnce.mockResolvedValue(
       mkProfile({
         column_profiles: [
           mkColumn({ name: 'alpha', semantic_type: 'numeric', quality_flags: [] }),
@@ -89,16 +107,29 @@ describe('ColumnsPage', () => {
 
   it('loading', () => {
     useUiStore.setState({ activeDatasetId: 'ds_1' })
-    h.fetchDatasetProfile.mockImplementation(() => new Promise(() => {}))
+    h.fetchDatasetProfileOnce.mockImplementation(() => new Promise(() => {}))
     wrap(<ColumnsPage />)
     expect(screen.getByRole('status', { name: /loading table/i })).toBeInTheDocument()
   })
 
   it('error', async () => {
-    h.fetchDatasetProfile.mockRejectedValue(new Error('e1'))
-    useUiStore.setState({ activeDatasetId: 'ds_1' })
+    h.fetchDatasetProfileOnce.mockReset()
+    h.fetchDatasetProfileOnce.mockRejectedValue(new Error('e1'))
+    useUiStore.setState({ activeDatasetId: 'ds_err' })
+    h.listDatasets.mockResolvedValue([
+      {
+        dataset_id: 'ds_err',
+        name: 'err.csv',
+        view_name: 'err',
+        source_path: '/p/err.csv',
+        format: 'csv',
+        row_count: 1,
+        column_count: 1,
+        file_size_bytes: 1,
+      },
+    ])
     wrap(<ColumnsPage />)
-    await waitFor(() => expect(screen.getByText('e1')).toBeInTheDocument())
+    expect(await screen.findByRole('alert')).toHaveTextContent('e1')
   })
 
   it('keeps column headers sticky inside a scrollable table container', async () => {
@@ -125,7 +156,7 @@ describe('ColumnsPage', () => {
 
   it('labels sampled uniqueness metrics', async () => {
     const user = userEvent.setup()
-    h.fetchDatasetProfile.mockResolvedValue(
+    h.fetchDatasetProfileOnce.mockResolvedValue(
       mkProfile({
         rows: 5_000,
         profiler_sample_rows: 2_000,
@@ -149,7 +180,7 @@ describe('ColumnsPage', () => {
   })
 
   it('shows Role badges from dataset profile structure metadata', async () => {
-    h.fetchDatasetProfile.mockResolvedValue(
+    h.fetchDatasetProfileOnce.mockResolvedValue(
       mkProfile({
         primary_grain_key_columns: ['player_id', 'season_year'],
         entity_id_columns: [{ name: 'player_id', confidence: 'high' }],
@@ -196,7 +227,7 @@ describe('ColumnsPage', () => {
   })
 
   it('hides Role column when no roles exist in dataset', async () => {
-    h.fetchDatasetProfile.mockResolvedValue(
+    h.fetchDatasetProfileOnce.mockResolvedValue(
       mkProfile({
         primary_grain_key_columns: [],
         entity_id_columns: [],
@@ -222,7 +253,7 @@ describe('ColumnsPage', () => {
 
   it('truncates long column names but keeps full title', async () => {
     const long = 'world_cup_squad_tournament_year_extra_suffix_for_test'
-    h.fetchDatasetProfile.mockResolvedValue(
+    h.fetchDatasetProfileOnce.mockResolvedValue(
       mkProfile({
         column_profiles: [mkColumn({ name: long, semantic_type: 'text', quality_flags: [] })],
       }),
@@ -257,7 +288,7 @@ describe('ColumnsPage', () => {
   })
 
   it('tints rows with critical quality flags', async () => {
-    h.fetchDatasetProfile.mockResolvedValue(
+    h.fetchDatasetProfileOnce.mockResolvedValue(
       mkProfile({
         column_profiles: [mkColumn({ name: 'flagged', quality_flags: ['high_missingness'] })],
       }),

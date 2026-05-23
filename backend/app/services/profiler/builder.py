@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 
 from app.config import Settings
 from app.models.api import (
@@ -13,8 +14,9 @@ from app.models.api import (
     TemporalKind,
 )
 from app.services.profiler.columns import _derive_column_profiles
+from app.services.profiler.budget import ProfileTimeBudget
 from app.services.profiler.full_metrics import FullProfileMetrics, collect_full_profile_metrics
-from app.services.profiler.io import _collect_profile_frame_inputs
+from app.services.profiler.io import LARGE_FILE_SAMPLE_WARNING, _collect_profile_frame_inputs
 from app.services.profiler.patterns import CURRENT_PROFILE_STRUCTURE_VERSION
 from app.services.profiler.quality import _build_profile_narrative, _detect_quality_issues, _severity_order
 from app.services.profiler.stages import (
@@ -61,11 +63,24 @@ def _apply_full_top_values(col_profiles, full_column_metrics: dict[str, object],
             c.top_pct = round(c.top_count / row_count * 100, 4) if row_count else None
 
 
-def _collect_profile_inputs(ds: RegisteredDataset, settings: Settings) -> ProfileInputs:
-    _lf, names, dtypes, stats, row_count, col_count, df_sample, profile_sample_rows = _collect_profile_frame_inputs(
-        ds, settings
-    )
-    metric_scope = MetricScope.full if profile_sample_rows == row_count else MetricScope.sample
+def _collect_profile_inputs(
+    ds: RegisteredDataset,
+    settings: Settings,
+    workspace: Workspace | None = None,
+    budget: ProfileTimeBudget | None = None,
+) -> ProfileInputs:
+    (
+        _lf,
+        names,
+        dtypes,
+        stats,
+        row_count,
+        col_count,
+        df_sample,
+        profile_sample_rows,
+        heavy_scan,
+    ) = _collect_profile_frame_inputs(ds, settings, workspace, budget)
+    metric_scope = MetricScope.full if profile_sample_rows == row_count and not heavy_scan else MetricScope.sample
     return ProfileInputs(
         names=names,
         dtypes=dtypes,
@@ -77,7 +92,12 @@ def _collect_profile_inputs(ds: RegisteredDataset, settings: Settings) -> Profil
         sample_n=profile_sample_rows,
         metric_scope=metric_scope,
         total_cells=row_count * col_count if col_count else 0,
+        large_file_sampled=heavy_scan,
     )
+
+
+def _budget_deadline(budget: ProfileTimeBudget | None) -> float | None:
+    return budget.deadline() if budget is not None else None
 
 
 def _collect_early_full_metrics(
@@ -85,9 +105,12 @@ def _collect_early_full_metrics(
     ds: RegisteredDataset,
     workspace: Workspace | None,
     settings: Settings,
+    budget: ProfileTimeBudget | None = None,
 ) -> FullMetricsResult:
     if workspace is None or inputs.row_count <= 0:
         return FullMetricsResult()
+    if budget is not None:
+        budget.check()
     try:
         return FullMetricsResult(
             metrics=collect_full_profile_metrics(
@@ -99,8 +122,11 @@ def _collect_early_full_metrics(
                 inputs.row_count,
                 grain_candidates=[],
                 top_value_columns=[],
+                budget_deadline=_budget_deadline(budget),
             )
         )
+    except TimeoutError:
+        raise
     except Exception:  # noqa: BLE001
         return FullMetricsResult(
             metrics=FullProfileMetrics(warnings=[_FULL_METRICS_WARNING]),
@@ -231,12 +257,15 @@ def _merge_late_full_metrics(
     structure: StructureInferenceResult,
     early_full: FullMetricsResult,
     columns: ColumnDerivationResult,
+    budget: ProfileTimeBudget | None = None,
 ) -> FullMetricsResult:
     full_metrics = early_full.metrics
     if workspace is None or inputs.row_count <= 0:
         return early_full
     if not (structure.top_value_columns or structure.grain_candidates):
         return early_full
+    if budget is not None:
+        budget.check()
     try:
         later_full_metrics = collect_full_profile_metrics(
             workspace,
@@ -249,7 +278,10 @@ def _merge_late_full_metrics(
             top_value_columns=structure.top_value_columns,
             include_duplicate=False,
             include_columns=False,
+            budget_deadline=_budget_deadline(budget),
         )
+    except TimeoutError:
+        raise
     except Exception:  # noqa: BLE001
         later_full_metrics = FullProfileMetrics(warnings=[_FULL_METRICS_WARNING])
         if full_metrics is None:
@@ -320,14 +352,31 @@ def build_profile(
     ds: RegisteredDataset,
     settings: Settings,
     workspace: Workspace | None = None,
+    *,
+    on_progress: Callable[[float], None] | None = None,
+    budget: ProfileTimeBudget | None = None,
 ) -> DatasetProfile:
     profiling_started = time.monotonic()
-    inputs = _collect_profile_inputs(ds, settings)
-    early_full = _collect_early_full_metrics(inputs, ds, workspace, settings)
+    if budget is None:
+        budget = ProfileTimeBudget(settings, ds.file_size_bytes)
+
+    def _progress(frac: float) -> None:
+        if on_progress is not None:
+            on_progress(frac)
+
+    _progress(0.0)
+    inputs = _collect_profile_inputs(ds, settings, workspace, budget)
+    _progress(0.2)
+    early_full = _collect_early_full_metrics(inputs, ds, workspace, settings, budget)
+    _progress(0.4)
     columns = _derive_column_profiles_stage(inputs, early_full)
     structure = _infer_structure_stage(inputs, columns, settings)
-    merged_full = _merge_late_full_metrics(inputs, ds, workspace, settings, structure, early_full, columns)
+    _progress(0.6)
+    merged_full = _merge_late_full_metrics(
+        inputs, ds, workspace, settings, structure, early_full, columns, budget
+    )
     structure = _finalize_structure_from_metrics(structure, inputs, merged_full)
+    _progress(0.9)
 
     if merged_full.metrics is not None:
         _apply_full_top_values(columns.col_profiles, merged_full.metrics.column_metrics, inputs.row_count)
@@ -357,6 +406,8 @@ def build_profile(
     )
 
     structure_warnings: list[str] = []
+    if inputs.large_file_sampled:
+        structure_warnings.append(LARGE_FILE_SAMPLE_WARNING)
     if not structure.primary_grain:
         structure_warnings.append("No high-confidence row grain key was identified in bounded analysis.")
     if structure.primary_temporal is None:
@@ -381,6 +432,7 @@ def build_profile(
     )
 
     col_profiles = columns.col_profiles
+    _progress(1.0)
     return DatasetProfile(
         dataset_id=ds.dataset_id,
         name=ds.source_path.name,

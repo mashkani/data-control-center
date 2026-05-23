@@ -29,6 +29,7 @@ class ProfileInputs:
     sample_n: int
     metric_scope: MetricScope
     total_cells: int
+    large_file_sampled: bool = False
 
 
 @dataclass

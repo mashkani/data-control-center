@@ -80,5 +80,11 @@ class Workspace:
     def query_count(self, view_name: str, timeout_seconds: float) -> int | None:
         return self._engine.query_count(view_name, timeout_seconds)
 
+    def query_column_count(self, view_name: str) -> int:
+        return self._engine.query_column_count(view_name)
+
+    def query_parquet_row_count(self, path: Path) -> int | None:
+        return self._engine.query_parquet_row_count(path)
+
     def sleep_poll(self, seconds: float) -> None:
         self._engine.sleep_poll(seconds)

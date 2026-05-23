@@ -1,67 +1,92 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { api } from '@/api/client'
+import { ApiRequestError, api, nextJobPollIntervalMs } from '@/api/client'
 import type { DatasetProfile } from '@/api/types'
 
 export function useDatasetProfile(datasetId: string | null | undefined) {
   const qc = useQueryClient()
-  const [refreshJobId, setRefreshJobId] = useState<string | null>(null)
+  const [activeJobId, setActiveJobId] = useState<string | null>(null)
 
   const profileQ = useQuery({
     queryKey: ['profile', datasetId],
-    queryFn: ({ signal }) => api.fetchDatasetProfile(datasetId!, { signal }),
-    enabled: !!datasetId,
+    queryFn: ({ signal }) => api.fetchDatasetProfileOnce(datasetId!, { signal }),
+    enabled: !!datasetId && !activeJobId,
+    retry: false,
   })
 
-  const refreshJobQ = useQuery({
-    queryKey: ['job', refreshJobId],
-    queryFn: () => api.getJob(refreshJobId!),
-    enabled: !!refreshJobId,
+  useEffect(() => {
+    const err = profileQ.error
+    if (err instanceof ApiRequestError && err.code === 'PROFILE_NOT_READY' && err.details?.job_id) {
+      const jobId = String(err.details.job_id)
+      queueMicrotask(() => setActiveJobId(jobId))
+    }
+  }, [profileQ.error])
+
+  useEffect(() => {
+    queueMicrotask(() => setActiveJobId(null))
+  }, [datasetId])
+
+  const jobQ = useQuery({
+    queryKey: ['job', activeJobId],
+    queryFn: () => api.getJob(activeJobId!),
+    enabled: !!activeJobId,
     refetchInterval: (q) => {
       const s = q.state.data?.status
-      if (!s) return 1200
-      return s === 'queued' || s === 'running' ? 1200 : false
+      if (!s) return nextJobPollIntervalMs(0)
+      if (s !== 'queued' && s !== 'running') return false
+      const attempts = Math.max(0, q.state.dataUpdateCount - 1)
+      return nextJobPollIntervalMs(attempts)
     },
   })
 
   useEffect(() => {
-    const status = refreshJobQ.data?.status
+    const status = jobQ.data?.status
     if (!status) return
     if (status === 'completed') {
+      queueMicrotask(() => setActiveJobId(null))
       void qc.invalidateQueries({ queryKey: ['profile', datasetId] })
       void qc.invalidateQueries({ queryKey: ['quality', datasetId] })
       void qc.invalidateQueries({ queryKey: ['profile-history', datasetId] })
       void qc.invalidateQueries({ queryKey: ['datasets'] })
-      queueMicrotask(() => setRefreshJobId(null))
     }
     if (status === 'failed' || status === 'canceled') {
-      queueMicrotask(() => setRefreshJobId(null))
+      queueMicrotask(() => setActiveJobId(null))
     }
-  }, [refreshJobQ.data?.status, qc, datasetId])
+  }, [jobQ.data?.status, qc, datasetId])
 
-  const runningRefresh =
-    refreshJobQ.data?.status === 'queued' || refreshJobQ.data?.status === 'running'
+  const jobStatus = jobQ.data?.status
+  const jobRunning = jobStatus === 'queued' || jobStatus === 'running'
 
   const isPendingProfile =
-    profileQ.isLoading || profileQ.isFetching || runningRefresh
+    !profileQ.isError &&
+    (profileQ.isLoading ||
+      profileQ.isFetching ||
+      (!!activeJobId && (jobRunning || jobQ.isLoading)))
+
+  const jobProgress = jobQ.data?.progress
 
   const refresh = useCallback(() => {
-    if (!datasetId || runningRefresh) return
-    void api.refreshProfile(datasetId).then((job) => setRefreshJobId(job.job_id))
-  }, [datasetId, runningRefresh])
+    if (!datasetId || jobRunning) return
+    void api.refreshProfile(datasetId).then((job) => setActiveJobId(job.job_id))
+  }, [datasetId, jobRunning])
 
   const cancelRefresh = useCallback(() => {
-    if (!refreshJobId) return
-    void api.cancelJob(refreshJobId)
-  }, [refreshJobId])
+    if (!activeJobId) return
+    void api.cancelJob(activeJobId)
+  }, [activeJobId])
 
   return {
     data: profileQ.data as DatasetProfile | undefined,
     isLoading: profileQ.isLoading,
-    isError: profileQ.isError,
+    isError:
+      profileQ.isError &&
+      !(
+        profileQ.error instanceof ApiRequestError && profileQ.error.code === 'PROFILE_NOT_READY'
+      ),
     error: profileQ.error,
     isPendingProfile,
-    runningRefresh,
+    runningRefresh: jobRunning,
+    jobProgress,
     refresh,
     cancelRefresh,
     refetch: profileQ.refetch,

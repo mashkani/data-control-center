@@ -78,6 +78,7 @@ function HeaderIdentity({
   format,
   updated,
   qScore,
+  profilingLabel,
 }: {
   name: string | null | undefined
   rows: number | null
@@ -86,6 +87,7 @@ function HeaderIdentity({
   format: string
   updated: number | undefined
   qScore: number | null | undefined
+  profilingLabel?: string | null
 }) {
   return (
     <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
@@ -108,6 +110,14 @@ function HeaderIdentity({
           ·
         </span>
         <span className="tabular-nums whitespace-nowrap">{formatBytes(sizeBytes)}</span>
+        {profilingLabel ? (
+          <>
+            <span aria-hidden className="text-white/25">
+              ·
+            </span>
+            <span className="whitespace-nowrap text-[hsl(var(--fg-muted))]">{profilingLabel}</span>
+          </>
+        ) : null}
         {updated ? (
           <>
             <span aria-hidden className="hidden text-white/25 sm:inline">
@@ -204,6 +214,12 @@ export function TopBar() {
   const updated = profileQ.dataUpdatedAt
 
   const runningRefresh = profileQ.runningRefresh
+  const profilingLabel =
+    profileQ.isPendingProfile && !profileQ.data
+      ? profileQ.jobProgress != null && profileQ.jobProgress > 0
+        ? `Profiling… ${Math.round(profileQ.jobProgress * 100)}%`
+        : 'Profiling…'
+      : null
 
   const onRefresh = profileQ.refresh
   const onCancelRefresh = profileQ.cancelRefresh
@@ -243,6 +259,7 @@ export function TopBar() {
             format={format}
             updated={updated}
             qScore={qScore}
+            profilingLabel={profilingLabel}
           />
         ) : (
           <div className="min-w-0 flex-1 space-y-1">

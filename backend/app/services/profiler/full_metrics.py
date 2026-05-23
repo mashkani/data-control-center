@@ -61,12 +61,17 @@ class _FullMetricReader:
         settings: Settings,
         view_name: str,
         row_count: int,
+        *,
+        budget_deadline: float | None = None,
     ) -> None:
         self.workspace = workspace
         self.settings = settings
         self.view_name = sanitize_sql_identifier(view_name)
         self.row_count = row_count
-        self.deadline = time.monotonic() + settings.profile_full_metrics_timeout_seconds
+        query_deadline = time.monotonic() + settings.profile_full_metrics_timeout_seconds
+        if budget_deadline is not None:
+            query_deadline = min(query_deadline, budget_deadline)
+        self.deadline = query_deadline
         self.warnings: list[str] = []
 
     def remaining(self) -> float:
@@ -184,8 +189,15 @@ def collect_full_profile_metrics(
     *,
     include_duplicate: bool = True,
     include_columns: bool = True,
+    budget_deadline: float | None = None,
 ) -> FullProfileMetrics:
-    reader = _FullMetricReader(workspace, settings, view_name, row_count)
+    reader = _FullMetricReader(
+        workspace,
+        settings,
+        view_name,
+        row_count,
+        budget_deadline=budget_deadline,
+    )
     metrics = FullProfileMetrics()
 
     if include_duplicate:

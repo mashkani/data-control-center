@@ -11,6 +11,10 @@ stable release. Maintainer tagging steps: [`docs/RELEASE.md`](docs/RELEASE.md).
 ### Changed
 
 - Raised default browser upload limits to **2 GiB** per file and per batch (`DCC_UPLOAD_MAX_BYTES_PER_FILE`, `DCC_UPLOAD_MAX_BATCH_BYTES`).
+- Upload and path registration now queue a single **`dataset_prepare`** background job per dataset (fast row count, then profile) instead of parallel **`dataset_count`** + **`profile_refresh`** jobs.
+- Large files (above **`DCC_PROFILE_HEAVY_SCAN_MAX_BYTES`**, default 256 MiB) use Parquet metadata / bounded counts and sample-scoped null metrics; profiles include a structure warning when metrics are sample-based.
+- Profiling honors **`DCC_PROFILE_TIMEOUT_SECONDS`** (extended by **`DCC_PROFILE_LARGE_FILE_TIMEOUT_SECONDS`** on heavy scans); prepare jobs report incremental **`progress`**.
+- Frontend profile loading polls jobs with exponential backoff and deduplicates profile queries across tabs (Charts uses **`useDatasetProfile`**).
 
 ### Breaking
 

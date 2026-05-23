@@ -56,8 +56,8 @@ def test_list_datasets_empty(client):
     assert r.json() == []
 
 
-def test_queue_count_job_handles_missing_dataset(client):
-    from app.api.datasets_jobs import _queue_count_job
+def test_queue_prepare_job_handles_missing_dataset(client):
+    from app.api.datasets_jobs import _queue_dataset_prepare_job
     from app.config import Settings
 
     captured: dict[str, object] = {}
@@ -69,10 +69,16 @@ def test_queue_count_job_handles_missing_dataset(client):
             captured["result"] = fn("job_x")
             return "job_x"
 
-    job_id = _queue_count_job("ds_missing", Jobs(), client.app.state.registry, Settings())
+    job_id = _queue_dataset_prepare_job(
+        "ds_missing",
+        Jobs(),
+        client.app.state.registry,
+        client.app.state.workspace,
+        Settings(),
+    )
     assert job_id == "job_x"
-    assert captured["kind"] == "dataset_count"
-    assert captured["result"] == {"dataset_id": "ds_missing", "row_count": None, "column_count": None}
+    assert captured["kind"] == "dataset_prepare"
+    assert captured["result"] == {"dataset_id": "ds_missing", "status": "missing"}
 
 
 def test_list_datasets_includes_quality_score_from_profile_cache(client, tmp_path):
@@ -510,8 +516,8 @@ def test_refresh_profile_not_found(client):
     assert client.post("/api/datasets/ds_missing/profile/refresh").status_code == 404
 
 
-def test_profile_refresh_fn_canceled_at_start(tmp_path, monkeypatch) -> None:
-    from app.api.datasets_jobs import _profile_refresh_fn
+def test_dataset_prepare_fn_canceled_at_start(tmp_path, monkeypatch) -> None:
+    from app.api.datasets_jobs import _dataset_prepare_fn
     from app.config import Settings
     from app.services.registry import DatasetRegistry
     from app.services.workspace import Workspace
@@ -526,12 +532,12 @@ def test_profile_refresh_fn_canceled_at_start(tmp_path, monkeypatch) -> None:
     p.write_text("a\n1\n")
     ds = reg.register_path(p)
     monkeypatch.setattr(ws.jobs, "job_cancel_requested", lambda _job_id: True)
-    fn = _profile_refresh_fn(ds.dataset_id, reg, ws, settings)
+    fn = _dataset_prepare_fn(ds.dataset_id, reg, ws, settings)
     assert fn("job_x")["status"] == "canceled"
 
 
-def test_profile_refresh_fn_missing_dataset(tmp_path) -> None:
-    from app.api.datasets_jobs import _profile_refresh_fn
+def test_dataset_prepare_fn_missing_dataset(tmp_path) -> None:
+    from app.api.datasets_jobs import _dataset_prepare_fn
     from app.config import Settings
     from app.services.jobs import JobService
     from app.services.registry import DatasetRegistry
@@ -547,7 +553,7 @@ def test_profile_refresh_fn_missing_dataset(tmp_path) -> None:
     p.write_text("a\n1\n")
     ds = reg.register_path(p)
     jobs = JobService(ws)
-    fn = _profile_refresh_fn(ds.dataset_id, reg, ws, settings)
+    fn = _dataset_prepare_fn(ds.dataset_id, reg, ws, settings)
     reg.unregister(ds.dataset_id)
     job_id = jobs.submit(kind="profile_refresh", dataset_id=ds.dataset_id, fn=fn)
     deadline = time.time() + 2.0
@@ -560,8 +566,8 @@ def test_profile_refresh_fn_missing_dataset(tmp_path) -> None:
     raise AssertionError("job did not finish")
 
 
-def test_profile_refresh_fn_build_failure(tmp_path, monkeypatch) -> None:
-    from app.api.datasets_jobs import _profile_refresh_fn
+def test_dataset_prepare_fn_build_failure(tmp_path, monkeypatch) -> None:
+    from app.api.datasets_jobs import _dataset_prepare_fn
     from app.config import Settings
     from app.services.jobs import JobService
     from app.services.registry import DatasetRegistry
@@ -582,7 +588,7 @@ def test_profile_refresh_fn_build_failure(tmp_path, monkeypatch) -> None:
 
     monkeypatch.setattr("app.api.datasets_jobs.build_profile", boom)
     jobs = JobService(ws)
-    fn = _profile_refresh_fn(ds.dataset_id, reg, ws, settings)
+    fn = _dataset_prepare_fn(ds.dataset_id, reg, ws, settings)
     job_id = jobs.submit(kind="profile_refresh", dataset_id=ds.dataset_id, fn=fn)
     deadline = time.time() + 2.0
     while time.time() < deadline:

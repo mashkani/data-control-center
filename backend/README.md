@@ -99,9 +99,12 @@ after validation. Incompatible layouts fail fast—see root [README — Upgradin
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| **`DCC_PROFILE_TIMEOUT_SECONDS`** | `20` | Overall profiling time budget |
+| **`DCC_PROFILE_TIMEOUT_SECONDS`** | `20` | Overall profiling time budget (enforced in prepare jobs) |
+| **`DCC_PROFILE_LARGE_FILE_TIMEOUT_SECONDS`** | `120` | Minimum budget when file size exceeds heavy-scan threshold |
 | **`DCC_PROFILE_FULL_METRICS_TIMEOUT_SECONDS`** | `8` | Best-effort timeout for exact full-table profile metrics before sample fallback |
-| **`DCC_REGISTRATION_COUNT_TIMEOUT_SECONDS`** | `6` | Row-count timeout at registration |
+| **`DCC_PROFILE_HEAVY_SCAN_MAX_BYTES`** | `268435456` | Above this size, skip full-table Polars null scan; use sample-scoped metrics |
+| **`DCC_PROFILE_USE_PARQUET_METADATA_COUNT`** | `true` | Prefer Parquet metadata for row counts before DuckDB `COUNT(*)` |
+| **`DCC_REGISTRATION_COUNT_TIMEOUT_SECONDS`** | `6` | Row-count timeout when metadata / prepare fast count falls back to DuckDB |
 | **`DCC_PROFILE_STRUCTURE_SAMPLE_MAX_ROWS`** | `50000` | Structure inference sample cap |
 | **`DCC_PROFILE_STRUCTURE_SAMPLE_MIN_ROWS`** | `5000` | Structure inference sample floor |
 | **`DCC_PROFILE_STRUCTURE_MAX_KEY_CANDIDATES`** | `10` | Max columns in key search pool |

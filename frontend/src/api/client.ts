@@ -123,7 +123,13 @@ async function handle<T>(res: Promise<Response>): Promise<T> {
 }
 
 const DEFAULT_JOB_POLL_INTERVAL_MS = 1200
+const DEFAULT_JOB_POLL_MAX_INTERVAL_MS = 8000
 const DEFAULT_JOB_POLL_TIMEOUT_MS = 600_000
+
+export function nextJobPollIntervalMs(attempt: number): number {
+  const ms = DEFAULT_JOB_POLL_INTERVAL_MS * 2 ** Math.max(0, attempt)
+  return Math.min(ms, DEFAULT_JOB_POLL_MAX_INTERVAL_MS)
+}
 
 export type JobPollOptions = {
   signal?: AbortSignal
@@ -156,8 +162,8 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
 
 async function waitForJob(jobId: string, opts?: JobPollOptions): Promise<JobDetail> {
   const timeoutMs = opts?.timeoutMs ?? DEFAULT_JOB_POLL_TIMEOUT_MS
-  const pollIntervalMs = opts?.pollIntervalMs ?? DEFAULT_JOB_POLL_INTERVAL_MS
   const started = Date.now()
+  let attempt = 0
   for (;;) {
     throwIfAborted(opts?.signal)
     if (Date.now() - started > timeoutMs) {
@@ -176,11 +182,16 @@ async function waitForJob(jobId: string, opts?: JobPollOptions): Promise<JobDeta
         { job_id: jobId },
       )
     }
+    const pollIntervalMs = opts?.pollIntervalMs ?? nextJobPollIntervalMs(attempt)
     await sleep(pollIntervalMs, opts?.signal)
+    attempt += 1
   }
 }
 
-async function fetchDatasetProfile(datasetId: string, opts?: JobPollOptions): Promise<DatasetProfile> {
+export async function fetchDatasetProfileOnce(
+  datasetId: string,
+  opts?: { signal?: AbortSignal },
+): Promise<DatasetProfile> {
   throwIfAborted(opts?.signal)
   const r = await apiFetch(`${API}/datasets/${datasetId}/profile`)
   const text = await r.text()
@@ -188,15 +199,27 @@ async function fetchDatasetProfile(datasetId: string, opts?: JobPollOptions): Pr
     return JSON.parse(text) as DatasetProfile
   }
   const err = parseApiErrorText(text)
-  if (err?.code === 'PROFILE_NOT_READY' && err.details?.job_id) {
-    await waitForJob(String(err.details.job_id), opts)
-    return fetchDatasetProfile(datasetId, opts)
-  }
   throw new ApiRequestError(
     err?.message ?? r.statusText ?? 'Request failed',
     err?.code ?? 'BAD_REQUEST',
-    err?.details,
+    err?.details ?? undefined,
   )
+}
+
+async function fetchDatasetProfile(datasetId: string, opts?: JobPollOptions): Promise<DatasetProfile> {
+  try {
+    return await fetchDatasetProfileOnce(datasetId, { signal: opts?.signal })
+  } catch (err) {
+    if (
+      err instanceof ApiRequestError &&
+      err.code === 'PROFILE_NOT_READY' &&
+      err.details?.job_id
+    ) {
+      await waitForJob(String(err.details.job_id), opts)
+      return fetchDatasetProfileOnce(datasetId, { signal: opts?.signal })
+    }
+    throw err
+  }
 }
 
 export const api = {
@@ -218,6 +241,7 @@ export const api = {
   },
 
   fetchDatasetProfile,
+  fetchDatasetProfileOnce,
 
   deleteDataset: async (datasetId: string) => {
     const r = await apiFetch(`${API}/datasets/${encodeURIComponent(datasetId)}`, { method: 'DELETE' })

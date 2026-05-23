@@ -17,6 +17,13 @@ from app.models.api import (
     StructureConfidence,
 )
 from app.services.profiler import build_profile
+from app.services.profiler.builder import (
+    _collect_profile_inputs,
+    _derive_column_profiles_stage,
+    _infer_structure_stage,
+    _merge_late_full_metrics,
+)
+from app.services.profiler.stages import FullMetricsResult
 from app.services.profiler.columns import (
     _infer_semantic,
     _numeric_describe_strings,
@@ -1329,5 +1336,72 @@ def test_merge_late_full_metrics_branches(tmp_path: Path, monkeypatch: pytest.Mo
             inputs, ds, ws, settings, structure, FullMetricsResult(), columns
         )
         assert late_ok.metrics is not None
+    finally:
+        ws.close()
+
+
+def test_build_profile_propagates_full_metrics_timeout(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def timeout(*_args, **_kwargs):
+        raise TimeoutError("full metrics budget exhausted")
+
+    monkeypatch.setattr("app.services.profiler.builder.collect_full_profile_metrics", timeout)
+    with pytest.raises(TimeoutError, match="budget"):
+        _registered_profile(
+            tmp_path,
+            pl.DataFrame({"id": [1, 2, 3]}),
+            settings=Settings(),
+            filename="t.parquet",
+        )
+
+
+def test_build_profile_large_file_structure_warning(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        "app.services.profiler.io._file_size_bytes",
+        lambda _ds: Settings().profile_heavy_scan_max_bytes + 1,
+    )
+    prof = _registered_profile(
+        tmp_path,
+        pl.DataFrame({"id": [1, 2], "v": [3, 4]}),
+        settings=Settings(),
+        filename="big.parquet",
+    )
+    from app.services.profiler.io import LARGE_FILE_SAMPLE_WARNING
+
+    assert any(LARGE_FILE_SAMPLE_WARNING in w for w in prof.structure_warnings)
+
+
+def test_merge_late_full_metrics_propagates_timeout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    settings = Settings(
+        workspace_db_path=tmp_path / "late_ws.duckdb",
+        allow_arbitrary_registration_paths=True,
+    )
+    ws = Workspace(settings)
+    try:
+        reg = DatasetRegistry(ws, settings)
+        p = tmp_path / "late.parquet"
+        pl.DataFrame({"id": [1, 2], "segment": ["a", "b"]}).write_parquet(p)
+        ds = reg.register_path(p)
+        inputs = _collect_profile_inputs(ds, settings, ws)
+        columns = _derive_column_profiles_stage(inputs, FullMetricsResult())
+        structure = _infer_structure_stage(inputs, columns, settings)
+        structure.top_value_columns = ["segment"]
+
+        def _late_timeout(*_a, **kwargs):
+            if kwargs.get("include_columns") is False:
+                raise TimeoutError("late budget")
+            return FullProfileMetrics()
+
+        monkeypatch.setattr(
+            "app.services.profiler.builder.collect_full_profile_metrics",
+            _late_timeout,
+        )
+        with pytest.raises(TimeoutError, match="late budget"):
+            _merge_late_full_metrics(
+                inputs, ds, ws, settings, structure, FullMetricsResult(), columns
+            )
     finally:
         ws.close()

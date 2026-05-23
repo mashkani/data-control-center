@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { BarChart3, RotateCcw, Terminal } from 'lucide-react'
 import { api } from '@/api/client'
+import { useDatasetProfile } from '@/hooks/useDatasetProfile'
 import { Button } from '@/components/ui/button'
 import { QueryErrorBanner } from '@/components/ui/query-error-banner'
 import { PageContainer } from '@/components/ui/section'
@@ -81,11 +82,7 @@ function ChartsWorkspace({
 export function ChartsPage() {
   const activeId = useUiStore((s) => s.activeDatasetId)
   const dsQ = useQuery({ queryKey: ['datasets'], queryFn: api.listDatasets })
-  const profileQ = useQuery({
-    queryKey: ['profile', activeId],
-    queryFn: ({ signal }) => api.fetchDatasetProfile(activeId!, { signal }),
-    enabled: !!activeId,
-  })
+  const profileQ = useDatasetProfile(activeId)
 
   const activeSummary = useMemo(
     () => dsQ.data?.find((d) => d.dataset_id === activeId),
@@ -100,7 +97,7 @@ export function ChartsPage() {
     )
   }
 
-  if (dsQ.isLoading || profileQ.isLoading) {
+  if (dsQ.isLoading || profileQ.isLoading || profileQ.isPendingProfile) {
     return (
       <PageContainer>
         <CardSkeleton />

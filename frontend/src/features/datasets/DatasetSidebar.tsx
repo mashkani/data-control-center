@@ -67,7 +67,9 @@ export function DatasetSidebar() {
         await qc.invalidateQueries({ queryKey: ['datasets'] })
         if (rows.length) {
           setActiveDatasetId(rows[rows.length - 1]!.dataset_id)
-          toast.success(`Registered ${rows.length} file(s). Row counts may appear shortly.`)
+          toast.success(
+            `Registered ${rows.length} file(s). Large files profile in the background; row counts and quality scores update when ready.`,
+          )
         }
       } catch (e) {
         toast.error((e as Error).message)

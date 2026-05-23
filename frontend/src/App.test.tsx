@@ -17,21 +17,30 @@ vi.mock('echarts', () => ({
   })),
 }))
 
-vi.mock('@/api/client', () => ({
-  api: {
-    listDatasets: vi.fn(),
-    uploadDatasets: vi.fn(),
-    fetchDatasetProfile: vi.fn(),
-    getSample: vi.fn(),
-    runQuery: vi.fn(),
-    getProfileHistory: vi.fn(),
-    getProfileDiff: vi.fn(),
-    listSavedQueries: vi.fn(),
-    listAskConversations: vi.fn(),
-    listLlmModels: vi.fn(),
-    health: vi.fn(),
-  },
-}))
+vi.mock('@/api/client', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('@/api/client')>()
+  return {
+    ...mod,
+    api: {
+      ...mod.api,
+      listDatasets: vi.fn(),
+      uploadDatasets: vi.fn(),
+      fetchDatasetProfile: vi.fn(),
+      fetchDatasetProfileOnce: vi.fn(),
+      getSample: vi.fn(),
+      runQuery: vi.fn(),
+      getProfileHistory: vi.fn(),
+      getProfileDiff: vi.fn(),
+      listSavedQueries: vi.fn(),
+      listAskConversations: vi.fn(),
+      listLlmModels: vi.fn(),
+      health: vi.fn(),
+      getJob: vi.fn(),
+      refreshProfile: vi.fn(),
+      cancelJob: vi.fn(),
+    },
+  }
+})
 
 function renderApp() {
   return render(<App />)
@@ -60,7 +69,7 @@ describe('App', () => {
         file_size_bytes: 1,
       },
     ])
-    vi.mocked(api.fetchDatasetProfile).mockResolvedValue(mkProfile())
+    vi.mocked(api.fetchDatasetProfileOnce).mockResolvedValue(mkProfile())
     vi.mocked(api.getSample).mockResolvedValue({
       page: 1,
       page_size: 100,

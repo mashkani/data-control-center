@@ -202,5 +202,29 @@ class WorkspaceEngine:
                 return None
         return int(row[0]) if row else None
 
+    def query_column_count(self, view_name: str) -> int:
+        safe = sanitize_sql_identifier(view_name)
+        with self.read_db() as con:
+            row = con.execute(f"SELECT COUNT(*) FROM pragma_table_info('{safe}')").fetchone()
+        return int(row[0]) if row else 0
+
+    def query_parquet_row_count(self, path: Path) -> int | None:
+        escaped = str(path.expanduser().resolve()).replace("'", "''")
+        with self.read_db() as con:
+            con.execute("PRAGMA disable_progress_bar")
+            try:
+                row = con.execute(
+                    f"SELECT COALESCE(SUM(row_group_num_rows), 0)::BIGINT FROM ("
+                    f"SELECT DISTINCT row_group_id, row_group_num_rows "
+                    f"FROM parquet_metadata('{escaped}')"
+                    f")"
+                ).fetchone()
+            except Exception:
+                return None
+        if not row:
+            return None
+        count = int(row[0])
+        return count if count > 0 else None
+
     def sleep_poll(self, seconds: float) -> None:
         time.sleep(seconds)

@@ -79,6 +79,19 @@ class JobStore:
             ).fetchone()
         return str(row[0]) if row else None
 
+    def job_find_any_active_for_dataset(self, dataset_id: str) -> str | None:
+        with self._engine.read_db() as con:
+            row = con.execute(
+                """
+                SELECT job_id FROM dcc_jobs
+                WHERE dataset_id = ? AND status IN ('queued', 'running')
+                ORDER BY created_at DESC
+                LIMIT 1
+                """,
+                [dataset_id],
+            ).fetchone()
+        return str(row[0]) if row else None
+
     def job_get(self, job_id: str) -> dict[str, Any] | None:
         with self._engine.read_db() as con:
             row = con.execute(

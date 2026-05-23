@@ -45,7 +45,7 @@ const h = vi.hoisted(() => ({
   listAskTurns: vi.fn(),
   listDatasets: vi.fn(),
   listLlmModels: vi.fn(),
-  fetchDatasetProfile: vi.fn(),
+  fetchDatasetProfile: vi.fn(), fetchDatasetProfileOnce: vi.fn(),
   health: vi.fn(),
 }))
 
@@ -64,6 +64,7 @@ vi.mock('@/api/client', async (importOriginal) => {
       listDatasets: h.listDatasets,
       listLlmModels: h.listLlmModels,
       fetchDatasetProfile: h.fetchDatasetProfile,
+      fetchDatasetProfileOnce: h.fetchDatasetProfileOnce,
       health: h.health,
     },
   }
@@ -126,7 +127,7 @@ describe('AskPage', () => {
       reachable: true,
       detail: null,
     })
-    h.fetchDatasetProfile.mockResolvedValue(minimalProfile)
+    h.fetchDatasetProfileOnce.mockResolvedValue(minimalProfile)
     h.health.mockResolvedValue({
       status: 'ok',
       llm: { reachable: true, model: 'qwen3:4b', detail: null },

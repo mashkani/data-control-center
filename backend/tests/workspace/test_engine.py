@@ -141,6 +141,19 @@ def test_job_find_active_for_dataset(tmp_path: Path) -> None:
         ws.close()
 
 
+def test_job_find_any_active_for_dataset(tmp_path: Path) -> None:
+    settings = _settings(tmp_path)
+    ws = Workspace(settings)
+    try:
+        assert ws.jobs.job_find_any_active_for_dataset("ds_001") is None
+        ws.jobs.job_insert("j1", "dataset_prepare", "ds_001", "running")
+        assert ws.jobs.job_find_any_active_for_dataset("ds_001") == "j1"
+        ws.jobs.job_finish("j1", "completed")
+        assert ws.jobs.job_find_any_active_for_dataset("ds_001") is None
+    finally:
+        ws.close()
+
+
 def test_jobs_insert_and_finish(tmp_path: Path) -> None:
     settings = _settings(tmp_path)
     ws = Workspace(settings)

@@ -22,6 +22,7 @@ vi.mock('echarts', () => ({
 const h = vi.hoisted(() => ({
   listDatasets: vi.fn(),
   fetchDatasetProfile: vi.fn(),
+  fetchDatasetProfileOnce: vi.fn(),
   runQuery: vi.fn(),
 }))
 
@@ -33,6 +34,7 @@ vi.mock('@/api/client', async (importOriginal) => {
       ...mod.api,
       listDatasets: h.listDatasets,
       fetchDatasetProfile: h.fetchDatasetProfile,
+      fetchDatasetProfileOnce: h.fetchDatasetProfileOnce,
       runQuery: h.runQuery,
     },
   }
@@ -84,7 +86,7 @@ function chartableProfile() {
 describe('ChartsPage', () => {
   beforeEach(() => {
     h.listDatasets.mockResolvedValue([dsRow])
-    h.fetchDatasetProfile.mockResolvedValue(chartableProfile())
+    h.fetchDatasetProfileOnce.mockResolvedValue(chartableProfile())
     h.runQuery.mockResolvedValue({
       columns: [{ name: 'bin_index', type: null }, { name: 'lower_bound', type: null }, { name: 'upper_bound', type: null }, { name: 'count', type: null }],
       rows: [{ bin_index: 0, lower_bound: 0, upper_bound: 10, count: 4 }],
@@ -107,7 +109,7 @@ describe('ChartsPage', () => {
   })
 
   it('shows invalid guidance when no numeric variables exist', async () => {
-    h.fetchDatasetProfile.mockResolvedValue(
+    h.fetchDatasetProfileOnce.mockResolvedValue(
       mkProfile({
         primary_temporal_column: { name: 'created_at', kind: 'continuous_datetime', confidence: 'high' },
         temporal_columns: [{ name: 'created_at', kind: 'continuous_datetime', confidence: 'high' }],

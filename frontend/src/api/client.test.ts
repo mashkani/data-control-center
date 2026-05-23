@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   api,
   askAgentStream,
+  fetchDatasetProfileOnce,
+  nextJobPollIntervalMs,
   parseApiErrorFromResponse,
   resetLocalSessionTokenForTests,
   setLocalSessionTokenForTests,
@@ -184,6 +186,38 @@ describe('api client', () => {
     expect(detail).toEqual({ code: 'BAD_REQUEST', message: 'plain detail', details: null })
   })
 
+  it('nextJobPollIntervalMs caps backoff', () => {
+    expect(nextJobPollIntervalMs(0)).toBe(1200)
+    expect(nextJobPollIntervalMs(3)).toBe(8000)
+  })
+
+  it('fetchDatasetProfileOnce throws PROFILE_NOT_READY without polling', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+      statusText: 'Not Found',
+      text: () =>
+        Promise.resolve(
+          JSON.stringify({
+            error: {
+              code: 'PROFILE_NOT_READY',
+              message: 'Profiling',
+              details: { job_id: 'j1' },
+            },
+          }),
+        ),
+    } as Response)
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(fetchDatasetProfileOnce('ds_1')).rejects.toMatchObject({
+      code: 'PROFILE_NOT_READY',
+    })
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/api/datasets/ds_1/profile'),
+      expect.any(Object),
+    )
+  })
+
   it('fetchDatasetProfile polls job when profile is not ready', async () => {
     vi.useFakeTimers()
     const profile = { dataset_id: 'ds_1' }
@@ -214,7 +248,7 @@ describe('api client', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     const pending = api.fetchDatasetProfile('ds_1')
-    await vi.advanceTimersByTimeAsync(2400)
+    await vi.advanceTimersByTimeAsync(4000)
     await expect(pending).resolves.toEqual(profile)
     vi.useRealTimers()
   })

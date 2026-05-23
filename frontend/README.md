@@ -57,10 +57,11 @@ editing [`backend/app/`](../backend/app) (see root **`Makefile`**: `--reload-dir
 | `['datasets']` | Dataset list |
 | `['profile', datasetId]` | Cached profile (prefer **`useDatasetProfile`**) |
 
-Prefer **`useDatasetProfile`** (or **`api.fetchDatasetProfile`**) for profile loads; it
-handles **`PROFILE_NOT_READY`** by polling **`details.job_id`** (default 10 min timeout,
-1200 ms interval; pass React Query’s **`signal`** for cancellation). Manual refresh uses
-**`api.refreshProfile`** and job polling before invalidating profile-related keys.
+Prefer **`useDatasetProfile`** for profile loads; it calls **`api.fetchDatasetProfileOnce`**
+and polls **`details.job_id`** with exponential backoff (1.2s–8s) when the API returns
+**`PROFILE_NOT_READY`**. **`api.fetchDatasetProfile`** remains for blocking loads (same job
+poll, default 10 min timeout). Manual refresh uses **`api.refreshProfile`** then job polling
+before invalidating profile-related keys.
 
 **Ask** uses **`askAgentStream`** (SSE) only. The Codex-inspired Ask workspace,
 first-run **AskHero**, **AskContextBar**, collapsible conversation rail search/auto-title,

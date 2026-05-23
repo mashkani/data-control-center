@@ -49,10 +49,23 @@ the file, or unregister the stale dataset and register it again.
 Profiles and quality issues are cached in **`DCC_WORKSPACE_DB_PATH`** (default
 `./.dcc_workspace.duckdb` relative to the backend process cwd).
 
-**After upload:** The UI polls background jobs until the profile is ready. If you call
+**After upload:** The UI polls background jobs until the profile is ready. Row and column
+counts may appear in the dataset list before the full profile cache is written. If you call
 the API directly, **`GET /api/datasets/{dataset_id}/profile`** is cache-only; on a miss
 it returns **`PROFILE_NOT_READY`** with **`details.job_id`**. Poll **`GET /api/jobs/{job_id}`**
 until **`completed`**, then retry.
+
+### Large local datasets
+
+- **Browser upload** copies files into **`.dcc_uploads/`** (up to **2 GiB** per file by default).
+  Profiling runs in one background **`dataset_prepare`** job per dataset; the header and SQL schema
+  panel show **Profiling…** with optional progress while it runs.
+- **Files larger than 256 MiB** (configurable via **`DCC_PROFILE_HEAVY_SCAN_MAX_BYTES`**) use
+  bounded sampling for per-column null rates; the profile lists a warning when metrics are
+  sample-scoped. Tune **`DCC_PROFILE_TIMEOUT_SECONDS`** and **`DCC_PROFILE_LARGE_FILE_TIMEOUT_SECONDS`**
+  if profiling times out on very large Parquet files.
+- **Path registration** (when enabled) avoids re-copying data you already have on disk—useful when
+  you analyze the same large file repeatedly. See [`backend/README.md`](../backend/README.md#uploads-and-path-registration).
 
 **Manual refresh:** Use **Refresh** in the dataset strip or
 **`POST /api/datasets/{dataset_id}/profile/refresh`**. The UI handles job polling;
@@ -66,7 +79,9 @@ see [`backend/README.md`](../backend/README.md) for job deduplication behavior.
 temporal axes, **entity identifiers** (separate from row grain), and ranked measure
 candidates. Older cached profiles are invalidated on read.
 
-**Sampling scope:** Row/null counts are full-table. Profiles also try exact full-table
+**Sampling scope:** For files under the heavy-scan threshold, row/null counts are full-table.
+For larger files, row counts use Parquet metadata or a bounded DuckDB count; null rates use the
+structure sample. Profiles also try exact full-table
 metrics for duplicate rows, column uniqueness, categorical/boolean top values, date ranges,
 and inferred grain-key candidates. If those exact checks exceed the bounded profile budget,
 the UI keeps the sampled value and labels it using profile metadata.

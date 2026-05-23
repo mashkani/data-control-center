@@ -8,7 +8,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, File, UploadFile
 
-from app.api.datasets_jobs import _queue_count_job, _queue_profile_job
+from app.api.datasets_jobs import _queue_dataset_prepare_job
 from app.api.deps import JobsDep, RegistryDep, SettingsDep, WorkspaceDep
 from app.errors import CODES, to_http_error
 from app.models.api import DatasetSummary, RegisterFileRequest, RegisterFolderRequest
@@ -95,8 +95,7 @@ async def upload_datasets(
             validate_upload_file(dest, settings)
             ds = registry.register_path(dest, compute_counts=False)
             summaries.append(registry.to_summary(ds))
-            _queue_count_job(ds.dataset_id, jobs, registry, settings)
-            _queue_profile_job(ds.dataset_id, jobs, registry, workspace, settings)
+            _queue_dataset_prepare_job(ds.dataset_id, jobs, registry, workspace, settings)
         except (ValueError, UploadValidationError) as exc:
             dest.unlink(missing_ok=True)
             emit("security.upload_reject", reason=type(exc).__name__, filename=safe)
@@ -129,8 +128,7 @@ def register_file(
     p = Path(body.path)
     try:
         ds = registry.register_path(p, compute_counts=False)
-        _queue_count_job(ds.dataset_id, jobs, registry, settings)
-        _queue_profile_job(ds.dataset_id, jobs, registry, workspace, settings)
+        _queue_dataset_prepare_job(ds.dataset_id, jobs, registry, workspace, settings)
     except FileNotFoundError:
         raise to_http_error(status_code=404, code=CODES.NOT_FOUND, message="File not found")
     except IsADirectoryError:
@@ -159,8 +157,7 @@ def register_folder(
     try:
         dss = registry.register_folder(p, recursive=body.recursive)
         for ds in dss:
-            _queue_count_job(ds.dataset_id, jobs, registry, settings)
-            _queue_profile_job(ds.dataset_id, jobs, registry, workspace, settings)
+            _queue_dataset_prepare_job(ds.dataset_id, jobs, registry, workspace, settings)
     except NotADirectoryError:
         raise to_http_error(status_code=400, code=CODES.BAD_REQUEST, message="Path must be a directory")
     return [registry.to_summary(ds) for ds in dss]

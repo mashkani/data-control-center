@@ -52,7 +52,7 @@ const h = vi.hoisted(() => ({
   listSavedQueries: vi.fn(),
   createSavedQuery: vi.fn(),
   deleteSavedQuery: vi.fn(),
-  fetchDatasetProfile: vi.fn(),
+  fetchDatasetProfile: vi.fn(), fetchDatasetProfileOnce: vi.fn(),
 }))
 
 vi.mock('@/api/client', async (importOriginal) => {
@@ -67,6 +67,7 @@ vi.mock('@/api/client', async (importOriginal) => {
       createSavedQuery: h.createSavedQuery,
       deleteSavedQuery: h.deleteSavedQuery,
       fetchDatasetProfile: h.fetchDatasetProfile,
+      fetchDatasetProfileOnce: h.fetchDatasetProfileOnce,
     },
   }
 })
@@ -112,7 +113,7 @@ describe('QueryPage', () => {
     h.listSavedQueries.mockResolvedValue([])
     h.createSavedQuery.mockReset()
     h.deleteSavedQuery.mockResolvedValue(undefined)
-    h.fetchDatasetProfile.mockReset()
+    h.fetchDatasetProfileOnce.mockReset()
     toastMock.success.mockReset()
     toastMock.error.mockReset()
     localStorage.clear()
@@ -127,7 +128,7 @@ describe('QueryPage', () => {
 
   it('renders active dataset chip with name and counts', async () => {
     h.listDatasets.mockResolvedValue([dsFooRow])
-    h.fetchDatasetProfile.mockResolvedValue({ rows: 12, columns: 3, column_profiles: [] })
+    h.fetchDatasetProfileOnce.mockResolvedValue({ rows: 12, columns: 3, column_profiles: [] })
     useUiStore.setState({ activeDatasetId: 'ds_001' })
     wrap(<QueryPage />)
     const chip = await screen.findByTestId('sql-active-dataset-chip')
@@ -264,7 +265,7 @@ describe('QueryPage', () => {
   it('schema rail starts collapsed and expands active dataset', async () => {
     const user = userEvent.setup()
     h.listDatasets.mockResolvedValue([dsFooRow])
-    h.fetchDatasetProfile.mockResolvedValue({
+    h.fetchDatasetProfileOnce.mockResolvedValue({
       column_profiles: [{ name: 'total cost', physical_type: 'DOUBLE' }],
     })
     useUiStore.setState({ activeDatasetId: 'ds_001', sqlSchemaCollapsed: true })
